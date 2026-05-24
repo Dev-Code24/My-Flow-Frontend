@@ -1,13 +1,13 @@
 'use client'
 
 import { Tool } from '@/interfaces';
-import { MousePointer2, Square, Diamond } from 'lucide-react';
+import { MousePointer2, Square, Diamond, Circle } from 'lucide-react';
 import { Dispatch, SetStateAction } from 'react';
 
 interface ShapesNavbarProps {
    tool: Tool;
    setTool: Dispatch<SetStateAction<Tool>>;
-   setSelectedId: Dispatch<SetStateAction<number | null>>;
+   setSelectedId: Dispatch<SetStateAction<number[]>>;
 }
 
 export default function ShapesNavbar(props: ShapesNavbarProps) {
@@ -39,7 +39,7 @@ export default function ShapesNavbar(props: ShapesNavbarProps) {
       <div className="group relative flex flex-col items-center">
         <button
           onClick={() => { 
-            setSelectedId(null);
+            setSelectedId([]);
             setTool(Tool.DRAW_RECTANGLE); 
           }}
           className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
@@ -61,7 +61,7 @@ export default function ShapesNavbar(props: ShapesNavbarProps) {
       <div className="group relative flex flex-col items-center">
         <button
           onClick={() => { 
-            setSelectedId(null);
+            setSelectedId([]);
             setTool(Tool.DRAW_RHOMBUS); 
           }}
           className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
@@ -74,6 +74,24 @@ export default function ShapesNavbar(props: ShapesNavbarProps) {
         </button>
         <span className="absolute -bottom-8 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
           Rhombus <span className="text-slate-400 ml-1">R</span>
+        </span>
+      </div>
+      <div className="group relative flex flex-col items-center">
+        <button
+          onClick={() => { 
+            setSelectedId([]);
+            setTool(Tool.DRAW_OVAL); 
+          }}
+          className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
+            tool === Tool.DRAW_OVAL 
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+              : 'hover:bg-slate-100 text-slate-600'
+          }`}
+        >
+          <Circle size={20} />
+        </button>
+        <span className="absolute -bottom-8 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+          Oval <span className="text-slate-400 ml-1">R</span>
         </span>
       </div>
     </div>

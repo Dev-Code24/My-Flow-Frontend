@@ -41,12 +41,14 @@ function isMouseOnElement(mx: number, my: number, el: Element, ctx: CanvasRender
   const hh = Math.abs(el.height) / 2;
 
   ctx.beginPath();
-  if (el.shape === 'rhombus') {
+  if (el.shape === Shape.RHOMBUS) {
     ctx.moveTo(0, -hh);
     ctx.lineTo(hw, 0);
     ctx.lineTo(0, hh);
     ctx.lineTo(-hw, 0);
     ctx.closePath();
+  } else if (el.shape === Shape.OVAL) {
+    ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
   } else {
     ctx.rect(-hw, -hh, Math.abs(el.width), Math.abs(el.height));
   }
@@ -72,14 +74,33 @@ function updateElementPropertiesUsingHandles(
   if (activeHandle === 'rotation') { return updateRotation(el, mouseX, mouseY); }
   if (!anchor) { return el; }
 
-  const newCx = (mouseX + anchor.x) / 2;
-  const newCy = (mouseY + anchor.y) / 2;
   const dx = mouseX - anchor.x;
   const dy = mouseY - anchor.y;
-  const localW = dx * Math.cos(-el.angle) - dy * Math.sin(-el.angle);
-  const localH = dx * Math.sin(-el.angle) + dy * Math.cos(-el.angle);
+  let localW = dx * Math.cos(-el.angle) - dy * Math.sin(-el.angle);
+  let localH = dx * Math.sin(-el.angle) + dy * Math.cos(-el.angle);
 
-  // 3. Return the new bounds
+  const MIN_SIZE = 18;
+  const signW = localW < 0 ? -1 : 1;
+  const signH = localH < 0 ? -1 : 1;
+
+  if (Math.abs(localW) < MIN_SIZE) {
+    localW = MIN_SIZE * signW;
+  }
+  if (Math.abs(localH) < MIN_SIZE) {
+    localH = MIN_SIZE * signH;
+  }
+
+  const localWVectorX = localW * Math.cos(el.angle);
+  const localWVectorY = localW * Math.sin(el.angle);
+  const localHVectorX = -localH * Math.sin(el.angle);
+  const localHVectorY = localH * Math.cos(el.angle);
+
+  const globalTargetX = anchor.x + localWVectorX + localHVectorX;
+  const globalTargetY = anchor.y + localWVectorY + localHVectorY;
+
+  const newCx = (anchor.x + globalTargetX) / 2;
+  const newCy = (anchor.y + globalTargetY) / 2;
+
   return {
     ...el,
     width: localW,
@@ -97,8 +118,8 @@ function updateRotation(el: Element, mouseX: number, mouseY: number): Element {
   return { ...el, angle };
 }
 
-function isDrawingTool(tool: Tool): tool is Tool.DRAW_RECTANGLE | Tool.DRAW_RHOMBUS {
-  return tool === Tool.DRAW_RECTANGLE || tool === Tool.DRAW_RHOMBUS;
+function isDrawingTool(tool: Tool): tool is Tool.DRAW_RECTANGLE | Tool.DRAW_RHOMBUS | Tool.DRAW_OVAL {
+  return tool === Tool.DRAW_RECTANGLE || tool === Tool.DRAW_RHOMBUS || tool === Tool.DRAW_OVAL;
 }
 
 function getShapeFromTool(tool: Tool): Shape | null {
@@ -107,17 +128,55 @@ function getShapeFromTool(tool: Tool): Shape | null {
       return Shape.RECTANGLE;
     case Tool.DRAW_RHOMBUS:
       return Shape.RHOMBUS;
+    case Tool.DRAW_OVAL:
+      return Shape.OVAL;
     default:
       return null;
   }
+}
+
+function getElementCorners(el: Element) {
+  const cx = el.x + el.width / 2;
+  const cy = el.y + el.height / 2;
+  const hw = el.width / 2;
+  const hh = el.height / 2;
+
+  const rotate = (px: number, py: number) => ({
+    x: cx + px * Math.cos(el.angle) - py * Math.sin(el.angle),
+    y: cy + px * Math.sin(el.angle) + py * Math.cos(el.angle)
+  });
+
+  return [
+    rotate(-hw, -hh), // Top Left
+    rotate(hw, -hh),  // Top Right
+    rotate(hw, hh),   // Bottom Right
+    rotate(-hw, hh)   // Bottom Left
+  ];
+}
+
+function isElementInSelection(el: Element, box: { x1: number, y1: number, x2: number, y2: number }): boolean {
+  const minX = Math.min(box.x1, box.x2);
+  const maxX = Math.max(box.x1, box.x2);
+  const minY = Math.min(box.y1, box.y2);
+  const maxY = Math.max(box.y1, box.y2);
+
+  const corners = getElementCorners(el);
+  
+  // Inclusive selection: true if ANY corner is inside the box
+  return corners.some(c => c.x >= minX && c.x <= maxX && c.y >= minY && c.y <= maxY);
 }
 
 export default function WhiteBoard() {
   const HANDLE_SIZE = 8;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [tool, setTool] = useState<Tool>(Tool.SELECT);
-  const [selectedId, setSelectedId] = useState<number | null>(-1);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isSelecting, setIsSelecting] = useState<boolean>(false);
+  const [selectionBox, setSelectionBox] = useState<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
+  const [isMoving, setIsMoving] = useState<boolean>(false);
+  const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [elements, setElements] = useState<Element[]>([
     { id: 1, x: 100, y: 100, width: 350, height: 300, angle: 0 , fill: true, shape: Shape.RECTANGLE, },
     { id: 3, x: 100, y: 100, width: 350, height: 300, angle: 90 , fill: true, shape: Shape.RECTANGLE, },
@@ -154,71 +213,129 @@ export default function WhiteBoard() {
       };
 
       setElements((prev) => [...prev, newElement]);
-      setSelectedId(newId);
+      setSelectedIds([ newId ]);
       setIsDrawing(true);
       return;
     }
-    const selected: Element | undefined = elements.find((el) => el.id === selectedId);
-    if (selected) {
-      const handle = getHandleAtPosition(mouseX, mouseY, selected);
-      if (handle) {
-        const cx = selected.x + selected.width / 2;
-        const cy = selected.y + selected.height / 2;
-        const halfW = selected.width / 2;
-        const halfH = selected.height / 2;
-        const getGlobal = (lx: number, ly: number) => ({
-          x: cx + lx * Math.cos(selected.angle) - ly * Math.sin(selected.angle),
-          y: cy + lx * Math.sin(selected.angle) + ly * Math.cos(selected.angle)
-        });
 
-        let anchor;
-        if (handle === "top-left") { anchor = getGlobal(halfW, halfH); }
-        else if (handle === "top-right") { anchor = getGlobal(-halfW, halfH); }
-        else if (handle === "bottom-right") { anchor = getGlobal(-halfW, -halfH); }
-        else if (handle === "bottom-left") { anchor = getGlobal(halfW, -halfH); }
-
-        if (anchor) { setResizeAnchor(anchor); }
-        
-        setIsResizing(true);
-        setActiveHandle(handle);
-        return;
+    if (selectedIds.length === 1) {
+      const selected: Element | undefined = elements.find((el) => el.id === selectedIds[0]);
+      if (selected) {
+        const handle = getHandleAtPosition(mouseX, mouseY, selected);
+        if (handle) {
+          const cx = selected.x + selected.width / 2;
+          const cy = selected.y + selected.height / 2;
+          const halfW = selected.width / 2;
+          const halfH = selected.height / 2;
+          const getGlobal = (lx: number, ly: number) => ({
+            x: cx + lx * Math.cos(selected.angle) - ly * Math.sin(selected.angle),
+            y: cy + lx * Math.sin(selected.angle) + ly * Math.cos(selected.angle)
+          });
+  
+          let anchor;
+          if (handle === "top-left") { anchor = getGlobal(halfW, halfH); }
+          else if (handle === "top-right") { anchor = getGlobal(-halfW, halfH); }
+          else if (handle === "bottom-right") { anchor = getGlobal(-halfW, -halfH); }
+          else if (handle === "bottom-left") { anchor = getGlobal(halfW, -halfH); }
+  
+          if (anchor) { setResizeAnchor(anchor); }
+          
+          setIsResizing(true);
+          setActiveHandle(handle);
+          return;
+        }
       }
     }
 
     let clickedElement: Element | undefined;
-
     for (let i = elements.length - 1; i >= 0; i--) {
-      const el = elements[i];
-      if (isMouseOnElement(mouseX, mouseY, el, ctx)) {
-        clickedElement = el;
+      if (isMouseOnElement(mouseX, mouseY, elements[i], ctx)) {
+        clickedElement = elements[i];
         break;
       }
     }
 
     if (clickedElement) {
-      setSelectedId(clickedElement.id);
+      if (!selectedIds.includes(clickedElement.id)) {
+        setSelectedIds([clickedElement.id]);
+      }
+      setIsMoving(true);
+      setLastMousePos({ x: mouseX, y: mouseY }); // Remember where the move sequence started
     } else {
-      setSelectedId(null);
+      setSelectedIds([]);
+      setIsSelecting(true);
+      setSelectionBox({ x1: mouseX, y1: mouseY, x2: mouseX, y2: mouseY });
     }
   }
 
   function handleMouseMove(e: React.MouseEvent): void {
     const canvas = canvasRef.current;
     if (!canvas) { return; }
+
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) { return; }
     
     const rect: DOMRect = canvas.getBoundingClientRect();
     const { mouseX, mouseY } = getMouseXY(e, rect);
 
+    const isHoveringShape = elements.some((el) => {
+      return isMouseOnElement(mouseX, mouseY, el, ctx);
+    });
+
+    if (isMoving) {
+      canvas.style.cursor = 'grabbing';
+    } else if (isResizing) {
+      canvas.style.cursor = 'nwse-resize'; 
+    } else if (isHoveringShape && tool === Tool.SELECT) {
+      canvas.style.cursor = 'grab'; // or 'move'
+    } else {
+      canvas.style.cursor = tool === Tool.SELECT ? 'default' : 'crosshair';
+    }
+
+    if (isSelecting && selectionBox) {
+      const newBox = { ...selectionBox, x2: mouseX, y2: mouseY };
+      setSelectionBox(newBox);
+      const idsInBox = elements.filter((el) => isElementInSelection(el, newBox)).map((el) => el.id);
+      setSelectedIds(idsInBox);
+
+      return;
+    }
+
+    if (isMoving && selectedIds.length > 0) {
+      const dx = mouseX - lastMousePos.x;
+      const dy = mouseY - lastMousePos.y;
+
+      setElements((prev: Element[]) => { 
+        return prev.map((el: Element) => { 
+          if (selectedIds.includes(el.id)) {
+            return {
+              ...el,
+              x: el.x + dx,
+              y: el.y + dy,
+            };
+          }
+
+          return el;
+        });
+      });
+
+      setLastMousePos({ x: mouseX, y: mouseY });
+      return;
+    }
+
     if (isDrawing && isDrawingTool(tool)) {
       setElements((prev) => prev.map((el) => {
-        if (el.id === selectedId) {
+        if (el.id === selectedIds[0]) {
           let newWidth = mouseX - el.x;
           let newHeight = mouseY - el.y;
+          const MIN_SIZE = 18;
 
           if (isShiftPressed) {
             const side = Math.max(Math.abs(newWidth), Math.abs(newHeight));
-            newWidth = newWidth < 0 ? -side : side;
-            newHeight = newHeight < 0 ? -side : side;
+            const minSizePossible = Math.max(side, MIN_SIZE);
+            newWidth = newWidth < 0 ? -minSizePossible : minSizePossible;
+            newHeight = newHeight < 0 ? -minSizePossible : minSizePossible;
           }
 
           return { ...el, width: newWidth, height: newHeight };
@@ -230,12 +347,12 @@ export default function WhiteBoard() {
       return;
     }
     
-    if (isResizing && selectedId) {
+    if (isResizing && selectedIds.length === 1) {
       let effectiveMouseX = mouseX;
       let effectiveMouseY = mouseY;
 
       if (isShiftPressed && resizeAnchor && activeHandle && activeHandle !== 'rotation') {
-        const el = elements.find(e => e.id === selectedId);
+        const el = elements.find(e => e.id === selectedIds[0]);
         if (el) {
           const ratio = Math.abs(el.width / el.height);
           const dx = mouseX - resizeAnchor.x;
@@ -251,7 +368,7 @@ export default function WhiteBoard() {
 
       setElements((prev) =>
         prev.map((el) => {
-          if (el.id !== selectedId) return el;
+          if (el.id !== selectedIds[0]) return el;
           return updateElementPropertiesUsingHandles(activeHandle, el, effectiveMouseX, effectiveMouseY, resizeAnchor);
         })
       );
@@ -261,9 +378,17 @@ export default function WhiteBoard() {
   function handleMouseUp(): void {
     setIsResizing(false);
     setIsDrawing(false);
+    setIsMoving(false);
+    setIsSelecting(false);
+    setSelectionBox(null);
     setTool(Tool.SELECT);
     setActiveHandle(null);
     setResizeAnchor(null);
+
+    const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = tool === Tool.SELECT ? 'default' : 'crosshair';
+      }
 
     setElements((prev) =>
       prev.map((el) => {
@@ -282,15 +407,26 @@ export default function WhiteBoard() {
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !canvas.getContext) { return; }
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { return; }
+    if (!canvas || !canvas.getContext) {
+      return;
+    }
+    if (canvasSize.width === 0 || canvasSize.height === 0) {
+      return;
+    }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
+
+    canvas.width = canvasSize.width;
+    canvas.height = canvasSize.height;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     elements.forEach((el) => {
       ctx.save();
 
+      const isSelected = selectedIds.includes(el.id);
       const centerX = el.x + el.width / 2;
       const centerY = el.y + el.height / 2;
       const halfW = el.width / 2;
@@ -306,91 +442,118 @@ export default function WhiteBoard() {
         ctx.lineTo(0, halfH);
         ctx.lineTo(-halfW, 0);
         ctx.closePath();
-      } else if (el.shape === Shape.RECTANGLE) {
+      } else if (el.shape === Shape.OVAL) {
+        ctx.ellipse(0, 0, Math.abs(halfW), Math.abs(halfH), 0, 0, Math.PI * 2);
+      } else  if (el.shape === Shape.RECTANGLE) {
         ctx.rect(-halfW, -halfH, el.width, el.height);
       }
 
       // Draw Fill
       if (el.fill) {
-        ctx.fillStyle = el.id === selectedId ? 'rgba(59, 130, 246, 0.5)' : 'rgba(0, 0, 0, 0.1)';
+        ctx.fillStyle = isSelected ? "rgba(59, 130, 246, 0.5)" : "rgba(0, 0, 0, 0.1)";
         ctx.fill();
       }
 
-      ctx.strokeStyle = el.id === selectedId ? '#3b82f6' : '#000';
+      ctx.strokeStyle = isSelected ? "#3b82f6" : "#000";
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      if (el.id === selectedId) {
-        ctx.fillStyle = '#3b82f6';
-        
+      if (isSelected) {
         // 1. Calculate visual (positive) half-dimensions
-        const absHalfW = Math.abs(el.width) / 2;
-        const absHalfH = Math.abs(el.height) / 2;
+        if (selectedIds.length === 1) {
+          ctx.fillStyle = "#3b82f6";
+          const absHalfW = Math.abs(el.width) / 2;
+          const absHalfH = Math.abs(el.height) / 2;
 
-        // 2. Draw Corner handles at the visual corners
-        ctx.fillRect(-absHalfW - 4, -absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE); // Top-left
-        ctx.fillRect(absHalfW - 4, -absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);  // Top-right
-        ctx.fillRect(-absHalfW - 4, absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);  // Bottom-left
-        ctx.fillRect(absHalfW - 4, absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);   // Bottom-right
+          ctx.fillRect(-absHalfW - 4, -absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
+          ctx.fillRect(absHalfW - 4, -absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
+          ctx.fillRect(-absHalfW - 4, absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
+          ctx.fillRect(absHalfW - 4, absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
 
-        // 3. Draw Rotation handle at the visual top
-        ctx.beginPath();
-        ctx.arc(0, -absHalfH - 25, 6, 0, Math.PI * 2);
-        ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, -absHalfH - 25, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       ctx.restore(); // Clean up for the next element
     });
-  }, [elements, selectedId]);
+
+    if (isSelecting && selectionBox) {
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.8)";
+      ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
+      const x = Math.min(selectionBox.x1, selectionBox.x2);
+      const y = Math.min(selectionBox.y1, selectionBox.y2);
+      const w = Math.abs(selectionBox.x2 - selectionBox.x1);
+      const h = Math.abs(selectionBox.y2 - selectionBox.y1);
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+    }
+  }, [elements, selectedIds, isSelecting, selectionBox, canvasSize]);
 
   useEffect(() => {
-    const handleCanvasResize = () => {
-      if (canvasRef.current) {
-        canvasRef.current.width = window.innerWidth;
-        canvasRef.current.height = window.innerHeight;
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setCanvasSize({ width, height });
       }
+    });
+
+    observer.observe(canvas);
+
+    return () => {
+      observer.disconnect();
     };
-
-    window.addEventListener('resize', handleCanvasResize);
-    handleCanvasResize();
-
-    return () => window.removeEventListener('resize', handleCanvasResize);
   }, []);
 
-  useEffect(() => { 
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
 
-      if ((key === 'delete' || key === 'backspace') && selectedId !== null) {
-        setElements((prev) => prev.filter((el) => { return el.id !== selectedId; }));
-        setSelectedId(null);
-      } else if (key === 'v') {
+      if ((key === "delete" || key === "backspace") && selectedIds.length) {
+        setElements((prev) =>
+          prev.filter((el) => {
+            return !selectedIds.includes(el.id);
+          }),
+        );
+        setSelectedIds([]);
+      } else if (key === "v") {
         setTool(Tool.SELECT);
-      } else if (key === 'd') {
-        setSelectedId(null);
+      } else if (key === "d") {
+        setSelectedIds([]);
         setTool(Tool.DRAW_RECTANGLE);
-      } else if (event.key === 'r') {
-        setSelectedId(null);
+      } else if (event.key === "r") {
+        setSelectedIds([]);
         setTool(Tool.DRAW_RHOMBUS);
-      } else if (event.key === 'Shift') {
+      } else if (key === "o") {
+        setSelectedIds([]);
+        setTool(Tool.DRAW_OVAL);
+      } else if (event.key === "Shift") {
         setIsShiftPressed(true);
       }
     };
 
-    const handleKeyUp = (event: KeyboardEvent) => { 
-      if (event.key === 'Shift') {
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Shift") {
         setIsShiftPressed(false);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    }
-  }, [selectedId]);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [selectedIds]);
 
   return (
   <div className="fixed inset-0 overflow-hidden bg-slate-200">
@@ -398,7 +561,7 @@ export default function WhiteBoard() {
       <ShapesNavbar 
         tool={tool}
         setTool={setTool}
-        setSelectedId={setSelectedId}
+        setSelectedId={setSelectedIds}
       />
 
     <canvas
@@ -407,8 +570,7 @@ export default function WhiteBoard() {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       style={{ cursor: tool === Tool.SELECT ? 'default' : 'crosshair' }}
-      className="block bg-white touch-none shadow-inner"
-    />
+      className="absolute top-0 left-0 w-full h-full block bg-white touch-none shadow-inner" />
   </div>
   );
 }
