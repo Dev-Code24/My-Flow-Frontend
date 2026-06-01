@@ -6,6 +6,7 @@ export enum Shape {
 
 export enum Tool {
   SELECT = 'select',
+  PAN = 'pan',
   DRAW_RECTANGLE = 'draw-rectangle',
   DRAW_RHOMBUS = 'draw-rhombus',
   DRAW_OVAL = 'draw-oval',

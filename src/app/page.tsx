@@ -2,169 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ResizeHandle, Shape, Tool, Element } from "@/interfaces";
+import { KeyboardKeys, MIN_SHAPE_SIZE } from "@/constanst";
 import ShapesNavbar from "@/components/ShapesNavbar";
-
-function getHandleAtPosition(mx: number, my: number, el: Element): ResizeHandle {
-  const centerX = el.x + el.width / 2;
-  const centerY = el.y + el.height / 2;
-  const dx = mx - centerX;
-  const dy = my - centerY;
-  const localX = dx * Math.cos(-el.angle) - dy * Math.sin(-el.angle);
-  const localY = dx * Math.sin(-el.angle) + dy * Math.cos(-el.angle);
-
-  const absHalfW = Math.abs(el.width) / 2;
-  const absHalfH = Math.abs(el.height) / 2;
-  const THRESHOLD = 15;
-  
-  if (Math.abs(localX - 0) < THRESHOLD && Math.abs(localY - (-absHalfH - 25)) < THRESHOLD) { return 'rotation'; }
-  if (Math.abs(localX - (-absHalfW)) < THRESHOLD && Math.abs(localY - (-absHalfH)) < THRESHOLD) { return 'top-left'; }
-  if (Math.abs(localX - absHalfW) < THRESHOLD && Math.abs(localY - (-absHalfH)) < THRESHOLD) { return 'top-right'; }
-  if (Math.abs(localX - (-absHalfW)) < THRESHOLD && Math.abs(localY - absHalfH) < THRESHOLD) { return 'bottom-left'; }
-  if (Math.abs(localX - absHalfW) < THRESHOLD && Math.abs(localY - absHalfH) < THRESHOLD) { return 'bottom-right'; }
-
-  return null;
-}
-
-function getMouseXY(e: React.MouseEvent, rect: DOMRect): { mouseX: number, mouseY: number } {
-  return { mouseX: e.clientX - rect.left, mouseY: e.clientY - rect.top };
-}
-
-function isMouseOnElement(mx: number, my: number, el: Element, ctx: CanvasRenderingContext2D): boolean {
-  ctx.save();
-  const centerX = el.x + el.width / 2;
-  const centerY = el.y + el.height / 2;
-  
-  ctx.translate(centerX, centerY);
-  ctx.rotate(el.angle);
-
-  const hw = Math.abs(el.width) / 2;
-  const hh = Math.abs(el.height) / 2;
-
-  ctx.beginPath();
-  if (el.shape === Shape.RHOMBUS) {
-    ctx.moveTo(0, -hh);
-    ctx.lineTo(hw, 0);
-    ctx.lineTo(0, hh);
-    ctx.lineTo(-hw, 0);
-    ctx.closePath();
-  } else if (el.shape === Shape.OVAL) {
-    ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
-  } else {
-    ctx.rect(-hw, -hh, Math.abs(el.width), Math.abs(el.height));
-  }
-  
-  let isHit = false;
-  if (el.fill) {
-    isHit = ctx.isPointInPath(mx, my);
-  } else {
-    ctx.lineWidth = 15; // Slightly larger for easier selection
-    isHit = ctx.isPointInStroke(mx, my);
-  }
-  ctx.restore();
-  return isHit;
-}
-
-function updateElementPropertiesUsingHandles(
-  activeHandle: ResizeHandle, 
-  el: Element, 
-  mouseX: number, 
-  mouseY: number,
-  anchor: { x: number, y: number } | null
-): Element {
-  if (activeHandle === 'rotation') { return updateRotation(el, mouseX, mouseY); }
-  if (!anchor) { return el; }
-
-  const dx = mouseX - anchor.x;
-  const dy = mouseY - anchor.y;
-  let localW = dx * Math.cos(-el.angle) - dy * Math.sin(-el.angle);
-  let localH = dx * Math.sin(-el.angle) + dy * Math.cos(-el.angle);
-
-  const MIN_SIZE = 18;
-  const signW = localW < 0 ? -1 : 1;
-  const signH = localH < 0 ? -1 : 1;
-
-  if (Math.abs(localW) < MIN_SIZE) {
-    localW = MIN_SIZE * signW;
-  }
-  if (Math.abs(localH) < MIN_SIZE) {
-    localH = MIN_SIZE * signH;
-  }
-
-  const localWVectorX = localW * Math.cos(el.angle);
-  const localWVectorY = localW * Math.sin(el.angle);
-  const localHVectorX = -localH * Math.sin(el.angle);
-  const localHVectorY = localH * Math.cos(el.angle);
-
-  const globalTargetX = anchor.x + localWVectorX + localHVectorX;
-  const globalTargetY = anchor.y + localWVectorY + localHVectorY;
-
-  const newCx = (anchor.x + globalTargetX) / 2;
-  const newCy = (anchor.y + globalTargetY) / 2;
-
-  return {
-    ...el,
-    width: localW,
-    height: localH,
-    x: newCx - localW / 2,
-    y: newCy - localH / 2,
-  };
-}
-
-function updateRotation(el: Element, mouseX: number, mouseY: number): Element {
-  const centerX = el.x + el.width / 2;
-  const centerY = el.y + el.height / 2;
-  const angle = Math.atan2(mouseY - centerY, mouseX - centerX) + Math.PI / 2;
-
-  return { ...el, angle };
-}
-
-function isDrawingTool(tool: Tool): tool is Tool.DRAW_RECTANGLE | Tool.DRAW_RHOMBUS | Tool.DRAW_OVAL {
-  return tool === Tool.DRAW_RECTANGLE || tool === Tool.DRAW_RHOMBUS || tool === Tool.DRAW_OVAL;
-}
-
-function getShapeFromTool(tool: Tool): Shape | null {
-  switch (tool) {
-    case Tool.DRAW_RECTANGLE:
-      return Shape.RECTANGLE;
-    case Tool.DRAW_RHOMBUS:
-      return Shape.RHOMBUS;
-    case Tool.DRAW_OVAL:
-      return Shape.OVAL;
-    default:
-      return null;
-  }
-}
-
-function getElementCorners(el: Element) {
-  const cx = el.x + el.width / 2;
-  const cy = el.y + el.height / 2;
-  const hw = el.width / 2;
-  const hh = el.height / 2;
-
-  const rotate = (px: number, py: number) => ({
-    x: cx + px * Math.cos(el.angle) - py * Math.sin(el.angle),
-    y: cy + px * Math.sin(el.angle) + py * Math.cos(el.angle)
-  });
-
-  return [
-    rotate(-hw, -hh), // Top Left
-    rotate(hw, -hh),  // Top Right
-    rotate(hw, hh),   // Bottom Right
-    rotate(-hw, hh)   // Bottom Left
-  ];
-}
-
-function isElementInSelection(el: Element, box: { x1: number, y1: number, x2: number, y2: number }): boolean {
-  const minX = Math.min(box.x1, box.x2);
-  const maxX = Math.max(box.x1, box.x2);
-  const minY = Math.min(box.y1, box.y2);
-  const maxY = Math.max(box.y1, box.y2);
-
-  const corners = getElementCorners(el);
-  
-  // Inclusive selection: true if ANY corner is inside the box
-  return corners.some(c => c.x >= minX && c.x <= maxX && c.y >= minY && c.y <= maxY);
-}
+import { getHandleAtPosition, getMouseXY, getShapeFromTool, isDrawingTool, isElementInSelection, isMouseOnElement, updateElementPropertiesUsingHandles } from "@/utils";
 
 export default function WhiteBoard() {
   const HANDLE_SIZE = 8;
@@ -173,21 +13,24 @@ export default function WhiteBoard() {
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [tool, setTool] = useState<Tool>(Tool.SELECT);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [isSelecting, setIsSelecting] = useState<boolean>(false);
   const [selectionBox, setSelectionBox] = useState<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
-  const [isMoving, setIsMoving] = useState<boolean>(false);
   const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
   const [elements, setElements] = useState<Element[]>([
     { id: 1, x: 100, y: 100, width: 350, height: 300, angle: 0 , fill: true, shape: Shape.RECTANGLE, },
     { id: 3, x: 100, y: 100, width: 350, height: 300, angle: 90 , fill: true, shape: Shape.RECTANGLE, },
     { id: 2, x:600, y: 200, width: 350, height: 300, angle: 0, fill: false, shape: Shape.RECTANGLE },
   ]);
-  
+
   const [resizeAnchor, setResizeAnchor] = useState<{ x: number, y: number } | null>(null);
+  const [isSelecting, setIsSelecting] = useState<boolean>(false);
+  const [isMoving, setIsMoving] = useState<boolean>(false);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
-  const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
   const [isShiftPressed, setIsShiftPressed] = useState<boolean>(false);
+  const [pan, setPan] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState<boolean>(false);
+  const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
   
   function handleMouseDown(e: React.MouseEvent): void {
     const canvas = canvasRef.current;
@@ -196,7 +39,16 @@ export default function WhiteBoard() {
     if (!ctx) { return; }
 
     const rect: DOMRect = canvas.getBoundingClientRect();
-    const { mouseX, mouseY } = getMouseXY(e, rect);
+    const rawMouseXY = getMouseXY(e, rect);
+    const mouseX = rawMouseXY.mouseX - pan.x;
+    const mouseY = rawMouseXY.mouseY - pan.y;
+
+    if ((isSpacePressed) || tool === Tool.PAN) {
+      setIsPanning(true);
+      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
+      return;
+    }
+
     const newElementShape = getShapeFromTool(tool);
 
     if (isDrawingTool(tool) && newElementShape) {
@@ -260,7 +112,7 @@ export default function WhiteBoard() {
         setSelectedIds([clickedElement.id]);
       }
       setIsMoving(true);
-      setLastMousePos({ x: mouseX, y: mouseY }); // Remember where the move sequence started
+      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
     } else {
       setSelectedIds([]);
       setIsSelecting(true);
@@ -277,7 +129,22 @@ export default function WhiteBoard() {
     if (!ctx) { return; }
     
     const rect: DOMRect = canvas.getBoundingClientRect();
-    const { mouseX, mouseY } = getMouseXY(e, rect);
+    const rawMouseXY = getMouseXY(e, rect);
+    const mouseX = rawMouseXY.mouseX - pan.x;
+    const mouseY = rawMouseXY.mouseY - pan.y;
+
+    if (isPanning) {
+      canvas.style.cursor = 'grabbing';
+      const dx = rawMouseXY.mouseX - lastMousePos.x;
+      const dy = rawMouseXY.mouseY - lastMousePos.y;
+
+      setPan((prev) => {
+        return { x: prev.x + dx, y: prev.y + dy };
+      })
+      
+      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
+      return;
+    }
 
     const isHoveringShape = elements.some((el) => {
       return isMouseOnElement(mouseX, mouseY, el, ctx);
@@ -285,11 +152,19 @@ export default function WhiteBoard() {
 
     if (isMoving) {
       canvas.style.cursor = 'grabbing';
-    } else if (isResizing) {
-      canvas.style.cursor = 'nwse-resize'; 
+    } else if (!!activeHandle) {
+      if (activeHandle === 'bottom-left' || activeHandle === 'top-right') {
+        canvas.style.cursor = 'nesw-resize';
+      } else if (activeHandle === 'top-left' || activeHandle === 'bottom-right') {
+        canvas.style.cursor = 'nwse-resize';
+      } else if (activeHandle === 'rotation') {
+        canvas.style.cursor = 'grabbing';
+      }
+    } else if (isSpacePressed || tool === Tool.PAN) {
+      canvas.style.cursor = 'grab';
     } else if (isHoveringShape && tool === Tool.SELECT) {
-      canvas.style.cursor = 'grab'; // or 'move'
-    } else {
+      canvas.style.cursor = 'grab';
+    } else if (!isSpacePressed) {
       canvas.style.cursor = tool === Tool.SELECT ? 'default' : 'crosshair';
     }
 
@@ -303,8 +178,8 @@ export default function WhiteBoard() {
     }
 
     if (isMoving && selectedIds.length > 0) {
-      const dx = mouseX - lastMousePos.x;
-      const dy = mouseY - lastMousePos.y;
+      const dx = rawMouseXY.mouseX - lastMousePos.x;
+      const dy = rawMouseXY.mouseY - lastMousePos.y;
 
       setElements((prev: Element[]) => { 
         return prev.map((el: Element) => { 
@@ -320,7 +195,7 @@ export default function WhiteBoard() {
         });
       });
 
-      setLastMousePos({ x: mouseX, y: mouseY });
+      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
       return;
     }
 
@@ -329,11 +204,10 @@ export default function WhiteBoard() {
         if (el.id === selectedIds[0]) {
           let newWidth = mouseX - el.x;
           let newHeight = mouseY - el.y;
-          const MIN_SIZE = 18;
 
           if (isShiftPressed) {
             const side = Math.max(Math.abs(newWidth), Math.abs(newHeight));
-            const minSizePossible = Math.max(side, MIN_SIZE);
+            const minSizePossible = Math.max(side, MIN_SHAPE_SIZE);
             newWidth = newWidth < 0 ? -minSizePossible : minSizePossible;
             newHeight = newHeight < 0 ? -minSizePossible : minSizePossible;
           }
@@ -381,9 +255,9 @@ export default function WhiteBoard() {
     setIsMoving(false);
     setIsSelecting(false);
     setSelectionBox(null);
-    setTool(Tool.SELECT);
     setActiveHandle(null);
     setResizeAnchor(null);
+    setIsPanning(false);
 
     const canvas = canvasRef.current;
       if (canvas) {
@@ -422,6 +296,8 @@ export default function WhiteBoard() {
     canvas.height = canvasSize.height;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(pan.x, pan.y);
 
     elements.forEach((el) => {
       ctx.save();
@@ -491,7 +367,9 @@ export default function WhiteBoard() {
       ctx.strokeRect(x, y, w, h);
       ctx.setLineDash([]);
     }
-  }, [elements, selectedIds, isSelecting, selectionBox, canvasSize]);
+
+    ctx.restore();
+  }, [elements, selectedIds, isSelecting, selectionBox, canvasSize, pan.x, pan.y]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -515,33 +393,52 @@ export default function WhiteBoard() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
+      if (event.repeat) {
+        return;
+      }
 
-      if ((key === "delete" || key === "backspace") && selectedIds.length) {
+      const key = event.key.toLowerCase();
+      if (event.key === KeyboardKeys.SPACEBAR) {
+        const canvas = canvasRef.current;
+        if (!canvas) { return; }
+
+        event.preventDefault();
+        setIsSpacePressed(true);
+        canvas.style.cursor = 'grab';
+        return;
+      }
+
+      if (key === KeyboardKeys.BACKSPACE && selectedIds.length) {
         setElements((prev) =>
           prev.filter((el) => {
             return !selectedIds.includes(el.id);
           }),
         );
         setSelectedIds([]);
-      } else if (key === "v") {
+      } else if (key === KeyboardKeys.V) {
         setTool(Tool.SELECT);
-      } else if (key === "d") {
+      } else if (key === KeyboardKeys.D) {
         setSelectedIds([]);
         setTool(Tool.DRAW_RECTANGLE);
-      } else if (event.key === "r") {
+      } else if (key === KeyboardKeys.R) {
         setSelectedIds([]);
         setTool(Tool.DRAW_RHOMBUS);
-      } else if (key === "o") {
+      } else if (key === KeyboardKeys.O) {
         setSelectedIds([]);
         setTool(Tool.DRAW_OVAL);
-      } else if (event.key === "Shift") {
+      } else if (key === KeyboardKeys.SHIFT) {
         setIsShiftPressed(true);
       }
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Shift") {
+      const key = event.key.toLowerCase();
+
+      if (event.key === KeyboardKeys.SPACEBAR) {
+        setIsSpacePressed(false);
+        return;
+      }
+      if (key === KeyboardKeys.SHIFT) {
         setIsShiftPressed(false);
       }
     };
@@ -562,6 +459,7 @@ export default function WhiteBoard() {
         tool={tool}
         setTool={setTool}
         setSelectedId={setSelectedIds}
+        setIsSpacePressed={setIsSpacePressed}
       />
 
     <canvas

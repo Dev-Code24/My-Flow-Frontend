@@ -1,99 +1,98 @@
 'use client'
 
 import { Tool } from '@/interfaces';
-import { MousePointer2, Square, Diamond, Circle } from 'lucide-react';
-import { Dispatch, SetStateAction } from 'react';
+import { MousePointer2, Square, Diamond, Circle, LockKeyholeOpen, Hand, Shapes } from 'lucide-react';
+import React, { Dispatch, SetStateAction, useState } from 'react';
 
 interface ShapesNavbarProps {
-   tool: Tool;
-   setTool: Dispatch<SetStateAction<Tool>>;
-   setSelectedId: Dispatch<SetStateAction<number[]>>;
+  tool: Tool;
+  setTool: Dispatch<SetStateAction<Tool>>;
+  setSelectedId: Dispatch<SetStateAction<number[]>>;
+  setIsSpacePressed: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function ShapesNavbar(props: ShapesNavbarProps) {
-   const { tool, setTool, setSelectedId } = props;
-   return (
-    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 p-1.5 bg-white/90 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 pointer-events-auto">
-      
-      {/* Selection Tool */}
-      <div className="group relative flex flex-col items-center">
-        <button
-          onClick={() => setTool(Tool.SELECT)}
-          className={`relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
-            tool === Tool.SELECT 
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-              : 'hover:bg-slate-100 text-slate-600'
-          }`}
-        >
-          <MousePointer2 size={20} />
-        </button>
-        {/* Shortcut Hint */}
-        <span className="absolute -bottom-8 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          Select <span className="text-slate-400 ml-1">V</span>
-        </span>
-      </div>
+const TOOLS = [
+  { id: Tool.SELECT,         Icon: MousePointer2, label: 'Select',    shortcut: '1' },
+  { id: Tool.DRAW_RECTANGLE, Icon: Square,        label: 'Rectangle', shortcut: '2' },
+  { id: Tool.DRAW_RHOMBUS,   Icon: Diamond,       label: 'Rhombus',   shortcut: '3' },
+  { id: Tool.DRAW_OVAL,      Icon: Circle,        label: 'Oval',      shortcut: '4' },
+] as const;
 
-      <div className="w-px h-8 bg-slate-200 mx-2" />
+export default function ShapesNavbar({ tool, setTool, setSelectedId, setIsSpacePressed }: ShapesNavbarProps) {
+  const [locked, setLocked]   = useState(false);
 
-      {/* Rectangle Tool */}
-      <div className="group relative flex flex-col items-center">
-        <button
-          onClick={() => { 
-            setSelectedId([]);
-            setTool(Tool.DRAW_RECTANGLE); 
-          }}
-          className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
-            tool === Tool.DRAW_RECTANGLE 
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-              : 'hover:bg-slate-100 text-slate-600'
-          }`}
-        >
-          <Square size={20} />
-        </button>
-        <span className="absolute -bottom-8 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          Rectangle <span className="text-slate-400 ml-1">D</span>
-        </span>
-      </div>
-      
-      <div className="w-px h-8 bg-slate-200 mx-2" />
+  const pick = (next: Tool) => {
+    if (next !== Tool.SELECT) { setSelectedId([]); }
+    setIsSpacePressed(false);
+    setTool(next);
+  };
 
-      {/* Rhombus Tool */}
-      <div className="group relative flex flex-col items-center">
-        <button
-          onClick={() => { 
-            setSelectedId([]);
-            setTool(Tool.DRAW_RHOMBUS); 
-          }}
-          className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
-            tool === Tool.DRAW_RHOMBUS 
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-              : 'hover:bg-slate-100 text-slate-600'
-          }`}
-        >
-          <Diamond size={20} />
-        </button>
-        <span className="absolute -bottom-8 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          Rhombus <span className="text-slate-400 ml-1">R</span>
-        </span>
-      </div>
-      <div className="group relative flex flex-col items-center">
-        <button
-          onClick={() => { 
-            setSelectedId([]);
-            setTool(Tool.DRAW_OVAL); 
-          }}
-          className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
-            tool === Tool.DRAW_OVAL 
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-              : 'hover:bg-slate-100 text-slate-600'
-          }`}
-        >
-          <Circle size={20} />
-        </button>
-        <span className="absolute -bottom-8 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          Oval <span className="text-slate-400 ml-1">R</span>
-        </span>
+  return (
+    <div className="absolute top-5.5 left-1/2 -translate-x-1/2 z-10">
+      <div className="flex items-center gap-0.5 px-3 py-2 rounded-[22px] bg-white border border-[#EBEAF0] shadow-[0_12px_32px_-10px_rgba(20,20,40,0.18),0_2px_6px_rgba(20,20,40,0.05)]">
+
+        {/* Canvas lock */}
+        <ToolButton active={locked} onClick={() => setLocked(v => !v)}
+          label={locked ? 'Unlock canvas' : 'Lock canvas'} Icon={LockKeyholeOpen} />
+
+        <Divider />
+
+        {/* FIXED: Treat Pan as a standard selectable tool */}
+        <ToolButton
+          active={tool === Tool.PAN}
+          onClick={() => pick(Tool.PAN)}
+          label="Hand (pan)"
+          Icon={Hand} 
+        />
+
+        {/* Supported drawing tools */}
+        {TOOLS.map(t => (
+          <ToolButton
+            key={t.id}
+            // FIXED: Removed !isPanning so the current tool stays highlighted when using spacebar
+            active={tool === t.id} 
+            onClick={() => pick(t.id as Tool)}
+            label={t.label}
+            shortcut={t.shortcut}
+            Icon={t.Icon}
+          />
+        ))}
+
+        <Divider />
+
+        {/* Shape library */}
+        <ToolButton label="More shapes" onClick={() => {}} Icon={Shapes} />
       </div>
     </div>
-   );
+  );
+}
+
+function Divider() {
+  return <span aria-hidden className="w-px h-6.5 mx-1.75 bg-[#E7E5EC] shrink-0" />;
+}
+
+function ToolButton({ active, onClick, label, shortcut, Icon }: {
+  active?: boolean;
+  onClick: () => void;
+  label: string;
+  shortcut?: string;
+  Icon: React.ComponentType<{ size?: number }>;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
+      title={label}
+      className={`cursor-pointer group relative w-11.5 h-11.5 rounded-[13px] inline-flex items-center justify-center transition-colors duration-150 ${active ? 'bg-[#ECE9FE] text-[#6246EA]' : 'text-[#3F3F49] hover:bg-[#F4F4F7]'}`}
+    >
+      <Icon size={21} />
+      {shortcut && (
+        <span aria-hidden className={`absolute right-1.75 bottom-1.5 text-[11px] leading-none font-medium ${active ? 'text-[#6246EA]/55' : 'text-[#B6B6C0]'}`}>
+          {shortcut}
+        </span>
+      )}
+    </button>
+  );
 }
