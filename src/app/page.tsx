@@ -2,9 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ResizeHandle, Shape, Tool, Element } from "@/interfaces";
-import { KeyboardKeys, MIN_SHAPE_SIZE } from "@/constanst";
+import { CORNER_HANDLES, CursorStyles, KeyboardKeys, MIN_SHAPE_SIZE } from "@/constants";
 import ShapesNavbar from "@/components/ShapesNavbar";
-import { getHandleAtPosition, getMouseXY, getShapeFromTool, isDrawingTool, isElementInSelection, isMouseOnElement, updateElementPropertiesUsingHandles } from "@/utils";
+import { getCursorForHandle, getHandleAtPosition, getMouseXY, getShapeFromTool, isDrawingTool, isElementInSelection, isMouseOnElement, updateElementPropertiesUsingHandles } from "@/utils";
 
 export default function WhiteBoard() {
   const HANDLE_SIZE = 8;
@@ -85,15 +85,21 @@ export default function WhiteBoard() {
           });
   
           let anchor;
-          if (handle === "top-left") { anchor = getGlobal(halfW, halfH); }
-          else if (handle === "top-right") { anchor = getGlobal(-halfW, halfH); }
-          else if (handle === "bottom-right") { anchor = getGlobal(-halfW, -halfH); }
-          else if (handle === "bottom-left") { anchor = getGlobal(halfW, -halfH); }
+          if (handle === "top-left" || handle === "top" || handle === "left") { 
+            anchor = getGlobal(halfW, halfH); 
+          } else if (handle === "top-right") { 
+            anchor = getGlobal(-halfW, halfH); 
+          } else if (handle === "bottom-right" || handle === "bottom" || handle === "right") { 
+            anchor = getGlobal(-halfW, -halfH); 
+          } else if (handle === "bottom-left") { 
+            anchor = getGlobal(halfW, -halfH); 
+          }
   
           if (anchor) { setResizeAnchor(anchor); }
           
           setIsResizing(true);
           setActiveHandle(handle);
+          canvas.style.cursor = getCursorForHandle(selected.angle, handle, true);
           return;
         }
       }
@@ -113,6 +119,7 @@ export default function WhiteBoard() {
       }
       setIsMoving(true);
       setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
+      canvas.style.cursor = CursorStyles.GRABBING;
     } else {
       setSelectedIds([]);
       setIsSelecting(true);
@@ -134,7 +141,7 @@ export default function WhiteBoard() {
     const mouseY = rawMouseXY.mouseY - pan.y;
 
     if (isPanning) {
-      canvas.style.cursor = 'grabbing';
+      canvas.style.cursor = CursorStyles.GRABBING;
       const dx = rawMouseXY.mouseX - lastMousePos.x;
       const dy = rawMouseXY.mouseY - lastMousePos.y;
 
@@ -150,22 +157,32 @@ export default function WhiteBoard() {
       return isMouseOnElement(mouseX, mouseY, el, ctx);
     });
 
-    if (isMoving) {
-      canvas.style.cursor = 'grabbing';
-    } else if (!!activeHandle) {
-      if (activeHandle === 'bottom-left' || activeHandle === 'top-right') {
-        canvas.style.cursor = 'nesw-resize';
-      } else if (activeHandle === 'top-left' || activeHandle === 'bottom-right') {
-        canvas.style.cursor = 'nwse-resize';
-      } else if (activeHandle === 'rotation') {
-        canvas.style.cursor = 'grabbing';
+    let hoveredHandle: ResizeHandle = null;
+
+    if (selectedIds.length === 1 && tool === Tool.SELECT && !isSpacePressed && !isPanning && !isMoving && !isResizing) {
+      const selected = elements.find((el) => el.id === selectedIds[0]);
+      if (selected) {
+        hoveredHandle = getHandleAtPosition(mouseX, mouseY, selected);
       }
-    } else if (isSpacePressed || tool === Tool.PAN) {
-      canvas.style.cursor = 'grab';
-    } else if (isHoveringShape && tool === Tool.SELECT) {
-      canvas.style.cursor = 'grab';
+    }
+
+    const visibleHandle = activeHandle || hoveredHandle;
+    let cursorAngle = 0;
+    if (selectedIds.length === 1) {
+      const activeEl = elements.find((el) => el.id === selectedIds[0]);
+      if (activeEl) {
+        cursorAngle = activeEl.angle;
+      }
+    }
+
+    if (isMoving) {
+      canvas.style.cursor = CursorStyles.GRABBING;
+    } else if (!!visibleHandle) {
+      canvas.style.cursor = getCursorForHandle(cursorAngle, visibleHandle, !!activeHandle);
+    } else if (isSpacePressed || tool === Tool.PAN || (isHoveringShape && tool === Tool.SELECT)) {
+      canvas.style.cursor = CursorStyles.GRAB;
     } else if (!isSpacePressed) {
-      canvas.style.cursor = tool === Tool.SELECT ? 'default' : 'crosshair';
+      canvas.style.cursor = tool === Tool.SELECT ? CursorStyles.DEFAULT : CursorStyles.CROSSHAIR;
     }
 
     if (isSelecting && selectionBox) {
@@ -224,8 +241,9 @@ export default function WhiteBoard() {
     if (isResizing && selectedIds.length === 1) {
       let effectiveMouseX = mouseX;
       let effectiveMouseY = mouseY;
+      const isCornerHandle = activeHandle && CORNER_HANDLES.includes(activeHandle);
 
-      if (isShiftPressed && resizeAnchor && activeHandle && activeHandle !== 'rotation') {
+      if (isShiftPressed && resizeAnchor && isCornerHandle) {
         const el = elements.find(e => e.id === selectedIds[0]);
         if (el) {
           const ratio = Math.abs(el.width / el.height);
@@ -261,10 +279,10 @@ export default function WhiteBoard() {
 
     const canvas = canvasRef.current;
       if (canvas) {
-        canvas.style.cursor = tool === Tool.SELECT ? 'default' : 'crosshair';
+        canvas.style.cursor = tool === Tool.SELECT ? CursorStyles.DEFAULT : CursorStyles.CROSSHAIR;
       }
 
-    setElements((prev) =>
+    setElements((prev: Element[]) =>
       prev.map((el) => {
         const newX = el.width < 0 ? el.x + el.width : el.x;
         const newY = el.height < 0 ? el.y + el.height : el.y;
@@ -355,6 +373,7 @@ export default function WhiteBoard() {
       ctx.restore(); // Clean up for the next element
     });
 
+    // creating marquee for selecting elements
     if (isSelecting && selectionBox) {
       ctx.setLineDash([5, 5]);
       ctx.strokeStyle = "rgba(59, 130, 246, 0.8)";
@@ -404,7 +423,7 @@ export default function WhiteBoard() {
 
         event.preventDefault();
         setIsSpacePressed(true);
-        canvas.style.cursor = 'grab';
+        canvas.style.cursor = CursorStyles.GRAB;
         return;
       }
 
@@ -452,6 +471,19 @@ export default function WhiteBoard() {
     };
   }, [selectedIds]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (isSpacePressed || tool === Tool.PAN) {
+      canvas.style.cursor = CursorStyles.GRAB;
+    } else if (tool === Tool.SELECT) {
+      canvas.style.cursor = CursorStyles.DEFAULT;
+    } else {
+      canvas.style.cursor = CursorStyles.CROSSHAIR;
+    }
+  }, [tool, isSpacePressed]);
+
   return (
   <div className="fixed inset-0 overflow-hidden bg-slate-200">
     {/* Refined Top Navbar */}
@@ -467,7 +499,7 @@ export default function WhiteBoard() {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      style={{ cursor: tool === Tool.SELECT ? 'default' : 'crosshair' }}
+      // style={{ cursor: tool === Tool.SELECT ? 'default' : 'crosshair' }}
       className="absolute top-0 left-0 w-full h-full block bg-white touch-none shadow-inner" />
   </div>
   );

@@ -23,4 +23,7 @@ export interface Element {
   shape: Shape;
 };
 
-export type ResizeHandle = 'top-left' | 'bottom-right' | 'top-right' | 'bottom-left' | 'rotation' | null;
+export type ResizeHandle =
+  'top-left' | 'bottom-right' | 'top-right' | 'bottom-left' | 'rotation' |
+  'top' | 'bottom' | 'left' | 'right' |
+  null;

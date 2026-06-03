@@ -1,4 +1,4 @@
-import { MIN_SHAPE_SIZE } from "@/constanst";
+import { CursorStyles, MIN_SHAPE_SIZE } from "@/constants";
 import { Element, ResizeHandle, Shape, Tool } from "@/interfaces";
 
 export function getHandleAtPosition(mx: number, my: number, el: Element): ResizeHandle {
@@ -18,6 +18,15 @@ export function getHandleAtPosition(mx: number, my: number, el: Element): Resize
   if (Math.abs(localX - absHalfW) < THRESHOLD && Math.abs(localY - (-absHalfH)) < THRESHOLD) { return 'top-right'; }
   if (Math.abs(localX - (-absHalfW)) < THRESHOLD && Math.abs(localY - absHalfH) < THRESHOLD) { return 'bottom-left'; }
   if (Math.abs(localX - absHalfW) < THRESHOLD && Math.abs(localY - absHalfH) < THRESHOLD) { return 'bottom-right'; }
+
+  // 2. Edges (evaluate second)
+  const isYWithin = localY >= -absHalfH && localY <= absHalfH;
+  const isXWithin = localX >= -absHalfW && localX <= absHalfW;
+
+  if (isYWithin && Math.abs(localX - (-absHalfW)) < THRESHOLD) { return 'left'; }
+  if (isYWithin && Math.abs(localX - absHalfW) < THRESHOLD) { return 'right'; }
+  if (isXWithin && Math.abs(localY - (-absHalfH)) < THRESHOLD) { return 'top'; }
+  if (isXWithin && Math.abs(localY - absHalfH) < THRESHOLD) { return 'bottom'; }
 
   return null;
 }
@@ -80,6 +89,16 @@ export function updateElementPropertiesUsingHandles(
   const dy = mouseY - anchor.y;
   let localW = dx * Math.cos(-el.angle) - dy * Math.sin(-el.angle);
   let localH = dx * Math.sin(-el.angle) + dy * Math.cos(-el.angle);
+
+  if (activeHandle === 'right') { 
+    localH = Math.abs(el.height); 
+  } else if (activeHandle === 'left') { 
+    localH = -Math.abs(el.height); 
+  } else if (activeHandle === 'bottom') { 
+    localW = Math.abs(el.width); 
+  } else if (activeHandle === 'top') { 
+    localW = -Math.abs(el.width); 
+  }
 
   const signW = localW < 0 ? -1 : 1;
   const signH = localH < 0 ? -1 : 1;
@@ -163,6 +182,56 @@ export function isElementInSelection(el: Element, box: { x1: number, y1: number,
 
   const corners = getElementCorners(el);
   
-  // Inclusive selection: true if ANY corner is inside the box
-  return corners.some(c => c.x >= minX && c.x <= maxX && c.y >= minY && c.y <= maxY);
+  // Inclusive selection: true if all corners are inside the box
+  return corners.every(c => c.x >= minX && c.x <= maxX && c.y >= minY && c.y <= maxY);
+}
+
+export function getCursorForHandle(angle: number, handle: ResizeHandle, isResizing: boolean): CursorStyles {
+  if (!handle) {
+    return CursorStyles.DEFAULT;
+  }
+
+  if (handle === 'rotation') {
+    return isResizing ? CursorStyles.GRABBING : CursorStyles.GRAB;
+  }
+
+  // Map each handle to its base angle in degrees
+  const baseAngles: Record<string, number> = {
+    'right': 0,
+    'bottom-right': 45,
+    'bottom': 90,
+    'bottom-left': 135,
+    'left': 180,
+    'top-left': 225,
+    'top': 270,
+    'top-right': 315
+  };
+
+  const baseAngle = baseAngles[handle];
+  if (baseAngle === undefined) { return CursorStyles.DEFAULT; }
+
+  // 1. Convert shape's radian angle to degrees
+  const angleInDegrees = angle * (180 / Math.PI);
+
+  // 2. Add the shape's rotation to the handle's base angle
+  let totalAngle = (baseAngle + angleInDegrees) % 360;
+  if (totalAngle < 0) {
+    totalAngle += 360; // Normalize negative angles
+  }
+
+  // 3. CSS cursors represent axes, which repeat every 180 degrees.
+  totalAngle = totalAngle % 180;
+
+  // 4. Map the resulting angle to the closest CSS cursor slice
+  if (totalAngle < 22.5 || totalAngle >= 157.5) {
+    return CursorStyles.EW_RESIZE;    // Horizontal axis
+  } else if (totalAngle >= 22.5 && totalAngle < 67.5) {
+    return CursorStyles.NWSE_RESIZE;  // Top-Left to Bottom-Right diagonal axis
+  } else if (totalAngle >= 67.5 && totalAngle < 112.5) {
+    return CursorStyles.NS_RESIZE;    // Vertical axis
+  } else if (totalAngle >= 112.5 && totalAngle < 157.5) {
+    return CursorStyles.NESW_RESIZE;  // Top-Right to Bottom-Left diagonal axis
+  }
+
+  return CursorStyles.DEFAULT;
 }
