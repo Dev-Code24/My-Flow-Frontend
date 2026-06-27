@@ -1,13 +1,12 @@
 'use client'
 
-import { Tool } from '@/interfaces';
+import { Tool, WhiteboardAction } from '@/interfaces';
 import { MousePointer2, Square, Diamond, Circle, LockKeyholeOpen, Hand, Shapes } from 'lucide-react';
 import React, { Dispatch, SetStateAction, useState } from 'react';
 
 interface ShapesNavbarProps {
   tool: Tool;
-  setTool: Dispatch<SetStateAction<Tool>>;
-  setSelectedId: Dispatch<SetStateAction<number[]>>;
+  dispatchWhiteBoardState: React.ActionDispatch<[action: WhiteboardAction]>
   setIsSpacePressed: Dispatch<SetStateAction<boolean>>;
 }
 
@@ -18,18 +17,17 @@ const TOOLS = [
   { id: Tool.DRAW_OVAL,      Icon: Circle,        label: 'Oval',      shortcut: '4' },
 ] as const;
 
-export default function ShapesNavbar({ tool, setTool, setSelectedId, setIsSpacePressed }: ShapesNavbarProps) {
-  const [locked, setLocked]   = useState(false);
+export default function ShapesNavbar({ tool, dispatchWhiteBoardState, setIsSpacePressed }: ShapesNavbarProps) {
+  const [locked, setLocked] = useState(false);
 
   const pick = (next: Tool) => {
-    if (next !== Tool.SELECT) { setSelectedId([]); }
     setIsSpacePressed(false);
-    setTool(next);
+    dispatchWhiteBoardState({ type: 'CHANGE_TOOL', tool: next });
   };
 
   return (
-    <div className="absolute top-5.5 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-0.5 px-3 py-2 rounded-[22px] bg-white border border-[#EBEAF0] shadow-[0_12px_32px_-10px_rgba(20,20,40,0.18),0_2px_6px_rgba(20,20,40,0.05)]">
+    <div className='absolute top-5.5 left-1/2 -translate-x-1/2 z-10'>
+      <div className='flex items-center gap-0.5 px-3 py-2 rounded-[22px] bg-white border border-[#EBEAF0] shadow-[0_12px_32px_-10px_rgba(20,20,40,0.18),0_2px_6px_rgba(20,20,40,0.05)]'>
 
         {/* Canvas lock */}
         <ToolButton active={locked} onClick={() => setLocked(v => !v)}
@@ -41,7 +39,7 @@ export default function ShapesNavbar({ tool, setTool, setSelectedId, setIsSpaceP
         <ToolButton
           active={tool === Tool.PAN}
           onClick={() => pick(Tool.PAN)}
-          label="Hand (pan)"
+          label='Hand (pan)'
           Icon={Hand} 
         />
 
@@ -49,7 +47,6 @@ export default function ShapesNavbar({ tool, setTool, setSelectedId, setIsSpaceP
         {TOOLS.map(t => (
           <ToolButton
             key={t.id}
-            // FIXED: Removed !isPanning so the current tool stays highlighted when using spacebar
             active={tool === t.id} 
             onClick={() => pick(t.id as Tool)}
             label={t.label}
@@ -61,14 +58,14 @@ export default function ShapesNavbar({ tool, setTool, setSelectedId, setIsSpaceP
         <Divider />
 
         {/* Shape library */}
-        <ToolButton label="More shapes" onClick={() => {}} Icon={Shapes} />
+        <ToolButton label='More shapes' onClick={() => {}} Icon={Shapes} />
       </div>
     </div>
   );
 }
 
 function Divider() {
-  return <span aria-hidden className="w-px h-6.5 mx-1.75 bg-[#E7E5EC] shrink-0" />;
+  return <span aria-hidden className='w-px h-6.5 mx-1.75 bg-[#E7E5EC] shrink-0' />;
 }
 
 function ToolButton({ active, onClick, label, shortcut, Icon }: {
@@ -80,7 +77,7 @@ function ToolButton({ active, onClick, label, shortcut, Icon }: {
 }) {
   return (
     <button
-      type="button"
+      type='button'
       onClick={onClick}
       aria-label={label}
       aria-pressed={active}

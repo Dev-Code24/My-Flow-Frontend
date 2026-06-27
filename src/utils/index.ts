@@ -1,5 +1,5 @@
 import { CursorStyles, MIN_SHAPE_SIZE } from "@/constants";
-import { Element, ResizeHandle, Shape, Tool } from "@/interfaces";
+import { Coordinates2D, Element, ResizeHandle, Shape, Tool } from "@/interfaces";
 
 export function getHandleAtPosition(mx: number, my: number, el: Element): ResizeHandle {
   const centerX = el.x + el.width / 2;
@@ -234,4 +234,38 @@ export function getCursorForHandle(angle: number, handle: ResizeHandle, isResizi
   }
 
   return CursorStyles.DEFAULT;
+}
+
+export function getCanvasPoint(e: React.MouseEvent, canvas: HTMLCanvasElement, pan: Coordinates2D, zoom: number): {
+    rawX: number;
+    rawY: number;
+    x: number;
+    y: number;
+} {
+  const rect = canvas.getBoundingClientRect();
+  const { mouseX, mouseY } = getMouseXY(e, rect);
+
+  return {
+    rawX: mouseX,
+    rawY: mouseY,
+    x: (mouseX - pan.x) / zoom,
+    y: (mouseY - pan.y) / zoom,
+  };
+}
+
+export function getContentBounds(elements: Element[]): { minValues: Coordinates2D; maxValues: Coordinates2D; } {
+  const minValues: Coordinates2D = { x: Infinity, y: Infinity };
+  const maxValues: Coordinates2D = { x: -Infinity, y: -Infinity };
+
+  elements.forEach((el: Element) => {
+    const allCorners: Coordinates2D[] = getElementCorners(el);
+    allCorners.forEach((corner) => { 
+      minValues.x = Math.min(minValues.x, corner.x);
+      minValues.y = Math.min(minValues.y, corner.y);
+      maxValues.x = Math.max(maxValues.x, corner.x);
+      maxValues.y = Math.max(maxValues.y, corner.y);
+    });
+  });
+
+  return { minValues, maxValues };
 }

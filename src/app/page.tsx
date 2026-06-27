@@ -1,53 +1,61 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ResizeHandle, Shape, Tool, Element } from "@/interfaces";
-import { CORNER_HANDLES, CursorStyles, KeyboardKeys, MIN_SHAPE_SIZE } from "@/constants";
-import ShapesNavbar from "@/components/ShapesNavbar";
-import { getCursorForHandle, getHandleAtPosition, getMouseXY, getShapeFromTool, isDrawingTool, isElementInSelection, isMouseOnElement, updateElementPropertiesUsingHandles } from "@/utils";
+import React, { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { ResizeHandle, Tool, Element, Coordinates2D, Interaction } from '@/interfaces';
+import { CORNER_HANDLES, CursorStyles, initialWhiteBoardState, MIN_SHAPE_SIZE } from '@/constants';
+import ShapesNavbar from '@/components/ShapesNavbar';
+import { getCanvasPoint, getContentBounds, getCursorForHandle, getHandleAtPosition, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles } from '@/utils';
+import { drawCanvas } from '@/utils/draw-canvas';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
 
 export default function WhiteBoard() {
-  const HANDLE_SIZE = 8;
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
-  const [tool, setTool] = useState<Tool>(Tool.SELECT);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [selectionBox, setSelectionBox] = useState<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
-  const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
-  const [elements, setElements] = useState<Element[]>([
-    { id: 1, x: 100, y: 100, width: 350, height: 300, angle: 0 , fill: true, shape: Shape.RECTANGLE, },
-    { id: 3, x: 100, y: 100, width: 350, height: 300, angle: 90 , fill: true, shape: Shape.RECTANGLE, },
-    { id: 2, x:600, y: 200, width: 350, height: 300, angle: 0, fill: false, shape: Shape.RECTANGLE },
-  ]);
+  const [whiteBoardState, dispatchWhiteBoardState] = useReducer(whiteboardReducer, initialWhiteBoardState);
+  const { elements, interaction, selectedIds, selectionBox, tool } = whiteBoardState;
 
-  const [resizeAnchor, setResizeAnchor] = useState<{ x: number, y: number } | null>(null);
-  const [isSelecting, setIsSelecting] = useState<boolean>(false);
-  const [isMoving, setIsMoving] = useState<boolean>(false);
-  const [isResizing, setIsResizing] = useState<boolean>(false);
-  const [isDrawing, setIsDrawing] = useState<boolean>(false);
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
+  const lastMousePos = useRef<Coordinates2D>({ x: 0, y: 0 });
+  const [resizeAnchor, setResizeAnchor] = useState<Coordinates2D | null>(null);
   const [isShiftPressed, setIsShiftPressed] = useState<boolean>(false);
-  const [pan, setPan] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState<boolean>(false);
   const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
-  
+  const [pan, setPan] = useState<Coordinates2D>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState<number>(1); // (1 = 100%)
+
+  const contentBounds = useMemo(() => getContentBounds(elements), [elements]);
+
+  function zoomTo(targetZoom: number, centerX: number, centerY: number) {
+    const clampedZoom = Math.max(0.1, Math.min(targetZoom, 3));
+
+    const scaleRatio = clampedZoom / zoom;
+
+    setPan({
+      x: centerX - (centerX - pan.x) * scaleRatio,
+      y: centerY - (centerY - pan.y) * scaleRatio,
+    });
+
+    setZoom(clampedZoom);
+  }
+
   function handleMouseDown(e: React.MouseEvent): void {
+    if (e.button === 1) {  e.preventDefault(); }
     const canvas = canvasRef.current;
     if (!canvas) { return; }
     const ctx: CanvasRenderingContext2D | null = canvas.getContext('2d');
     if (!ctx) { return; }
 
-    const rect: DOMRect = canvas.getBoundingClientRect();
-    const rawMouseXY = getMouseXY(e, rect);
-    const mouseX = rawMouseXY.mouseX - pan.x;
-    const mouseY = rawMouseXY.mouseY - pan.y;
+    const { x, y, rawX, rawY } = getCanvasPoint(e, canvas, pan, zoom);
 
-    if ((isSpacePressed) || tool === Tool.PAN) {
-      setIsPanning(true);
-      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
+    if (isSpacePressed || e.button === 1 || tool === Tool.PAN) {
+      dispatchWhiteBoardState({ type: 'SET_INTERACTION', interaction: Interaction.PANNING });
+
+      lastMousePos.current = { x: rawX, y: rawY };
+      canvas.style.cursor = CursorStyles.GRABBING;
       return;
     }
+
+    if (e.button !== 0) { return; }
 
     const newElementShape = getShapeFromTool(tool);
 
@@ -55,8 +63,8 @@ export default function WhiteBoard() {
       const newId: number = Date.now();
       const newElement: Element = {
         id: newId,
-        x: mouseX,
-        y: mouseY,
+        x,
+        y,
         width: 0,
         height: 0,
         angle: 0,
@@ -64,16 +72,14 @@ export default function WhiteBoard() {
         shape: newElementShape,
       };
 
-      setElements((prev) => [...prev, newElement]);
-      setSelectedIds([ newId ]);
-      setIsDrawing(true);
+      dispatchWhiteBoardState({ type: 'START_DRAW', element: newElement });
       return;
     }
 
     if (selectedIds.length === 1) {
       const selected: Element | undefined = elements.find((el) => el.id === selectedIds[0]);
       if (selected) {
-        const handle = getHandleAtPosition(mouseX, mouseY, selected);
+        const handle = getHandleAtPosition(x, y, selected);
         if (handle) {
           const cx = selected.x + selected.width / 2;
           const cy = selected.y + selected.height / 2;
@@ -85,19 +91,19 @@ export default function WhiteBoard() {
           });
   
           let anchor;
-          if (handle === "top-left" || handle === "top" || handle === "left") { 
+          if (handle === 'top-left' || handle === 'top' || handle === 'left') { 
             anchor = getGlobal(halfW, halfH); 
-          } else if (handle === "top-right") { 
+          } else if (handle === 'top-right') { 
             anchor = getGlobal(-halfW, halfH); 
-          } else if (handle === "bottom-right" || handle === "bottom" || handle === "right") { 
+          } else if (handle === 'bottom-right' || handle === 'bottom' || handle === 'right') { 
             anchor = getGlobal(-halfW, -halfH); 
-          } else if (handle === "bottom-left") { 
+          } else if (handle === 'bottom-left') { 
             anchor = getGlobal(halfW, -halfH); 
           }
   
           if (anchor) { setResizeAnchor(anchor); }
           
-          setIsResizing(true);
+          dispatchWhiteBoardState({ type: 'SET_INTERACTION', interaction: Interaction.RESIZING })
           setActiveHandle(handle);
           canvas.style.cursor = getCursorForHandle(selected.angle, handle, true);
           return;
@@ -107,7 +113,7 @@ export default function WhiteBoard() {
 
     let clickedElement: Element | undefined;
     for (let i = elements.length - 1; i >= 0; i--) {
-      if (isMouseOnElement(mouseX, mouseY, elements[i], ctx)) {
+      if (isMouseOnElement(x, y, elements[i], ctx)) {
         clickedElement = elements[i];
         break;
       }
@@ -115,15 +121,13 @@ export default function WhiteBoard() {
 
     if (clickedElement) {
       if (!selectedIds.includes(clickedElement.id)) {
-        setSelectedIds([clickedElement.id]);
+        dispatchWhiteBoardState({ type: 'SELECT_ELEMENT', id: clickedElement.id });
       }
-      setIsMoving(true);
-      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
+      dispatchWhiteBoardState({ type: 'SET_INTERACTION', interaction: Interaction.MOVING });
+      lastMousePos.current = { x: rawX, y: rawY };
       canvas.style.cursor = CursorStyles.GRABBING;
     } else {
-      setSelectedIds([]);
-      setIsSelecting(true);
-      setSelectionBox({ x1: mouseX, y1: mouseY, x2: mouseX, y2: mouseY });
+      dispatchWhiteBoardState({ type: 'START_SELECTION', x, y });
     }
   }
 
@@ -134,35 +138,33 @@ export default function WhiteBoard() {
     const ctx = canvas.getContext('2d');
 
     if (!ctx) { return; }
-    
-    const rect: DOMRect = canvas.getBoundingClientRect();
-    const rawMouseXY = getMouseXY(e, rect);
-    const mouseX = rawMouseXY.mouseX - pan.x;
-    const mouseY = rawMouseXY.mouseY - pan.y;
 
-    if (isPanning) {
+    const { x, y, rawX, rawY } = getCanvasPoint(e, canvas, pan, zoom);
+    const isMiddleClickPanning = e.buttons === 4;
+
+    if (interaction === Interaction.PANNING || isMiddleClickPanning) {
       canvas.style.cursor = CursorStyles.GRABBING;
-      const dx = rawMouseXY.mouseX - lastMousePos.x;
-      const dy = rawMouseXY.mouseY - lastMousePos.y;
+      const dx = rawX - lastMousePos.current.x;
+      const dy = rawY - lastMousePos.current.y;
 
       setPan((prev) => {
         return { x: prev.x + dx, y: prev.y + dy };
       })
       
-      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
+      lastMousePos.current = { x: rawX, y: rawY };
       return;
     }
 
     const isHoveringShape = elements.some((el) => {
-      return isMouseOnElement(mouseX, mouseY, el, ctx);
+      return isMouseOnElement(x, y, el, ctx);
     });
 
     let hoveredHandle: ResizeHandle = null;
 
-    if (selectedIds.length === 1 && tool === Tool.SELECT && !isSpacePressed && !isPanning && !isMoving && !isResizing) {
+    if (selectedIds.length === 1 && tool === Tool.SELECT && !isSpacePressed && interaction !== Interaction.MOVING && interaction !== Interaction.RESIZING) {
       const selected = elements.find((el) => el.id === selectedIds[0]);
       if (selected) {
-        hoveredHandle = getHandleAtPosition(mouseX, mouseY, selected);
+        hoveredHandle = getHandleAtPosition(x, y, selected);
       }
     }
 
@@ -175,7 +177,7 @@ export default function WhiteBoard() {
       }
     }
 
-    if (isMoving) {
+    if (interaction === Interaction.MOVING) {
       canvas.style.cursor = CursorStyles.GRABBING;
     } else if (!!visibleHandle) {
       canvas.style.cursor = getCursorForHandle(cursorAngle, visibleHandle, !!activeHandle);
@@ -185,70 +187,56 @@ export default function WhiteBoard() {
       canvas.style.cursor = tool === Tool.SELECT ? CursorStyles.DEFAULT : CursorStyles.CROSSHAIR;
     }
 
-    if (isSelecting && selectionBox) {
-      const newBox = { ...selectionBox, x2: mouseX, y2: mouseY };
-      setSelectionBox(newBox);
-      const idsInBox = elements.filter((el) => isElementInSelection(el, newBox)).map((el) => el.id);
-      setSelectedIds(idsInBox);
-
+    if (interaction === Interaction.SELECTING && selectionBox) {
+      dispatchWhiteBoardState({ type: 'UPDATE_SELECTION', x, y });
       return;
     }
 
-    if (isMoving && selectedIds.length > 0) {
-      const dx = rawMouseXY.mouseX - lastMousePos.x;
-      const dy = rawMouseXY.mouseY - lastMousePos.y;
+    if (interaction === Interaction.MOVING && selectedIds.length > 0) {
+      const dx = (rawX - lastMousePos.current.x) / zoom;
+      const dy = (rawY - lastMousePos.current.y) / zoom;
 
-      setElements((prev: Element[]) => { 
-        return prev.map((el: Element) => { 
-          if (selectedIds.includes(el.id)) {
-            return {
-              ...el,
-              x: el.x + dx,
-              y: el.y + dy,
-            };
+      dispatchWhiteBoardState({ type: 'MOVE_SELECTED', dx, dy });
+
+      lastMousePos.current = { x: rawX, y: rawY };
+      return;
+    }
+
+    if (interaction === Interaction.DRAWING && isDrawingTool(tool)) {
+      dispatchWhiteBoardState({
+        type: 'SET_ELEMENTS', updater: (prev: Element[]) => prev.map((el: Element) => {
+          if (el.id === selectedIds[0]) {
+            let newWidth = x - el.x;
+            let newHeight = y - el.y;
+            
+            if (isShiftPressed) {
+              const side = Math.max(Math.abs(newWidth), Math.abs(newHeight));
+              const minSizePossible = Math.max(side, MIN_SHAPE_SIZE);
+              newWidth = newWidth < 0 ? -minSizePossible : minSizePossible;
+              newHeight = newHeight < 0 ? -minSizePossible : minSizePossible;
+            }
+
+            return { ...el, width: newWidth, height: newHeight };
           }
 
           return el;
-        });
+        })
       });
-
-      setLastMousePos({ x: rawMouseXY.mouseX, y: rawMouseXY.mouseY });
-      return;
-    }
-
-    if (isDrawing && isDrawingTool(tool)) {
-      setElements((prev) => prev.map((el) => {
-        if (el.id === selectedIds[0]) {
-          let newWidth = mouseX - el.x;
-          let newHeight = mouseY - el.y;
-
-          if (isShiftPressed) {
-            const side = Math.max(Math.abs(newWidth), Math.abs(newHeight));
-            const minSizePossible = Math.max(side, MIN_SHAPE_SIZE);
-            newWidth = newWidth < 0 ? -minSizePossible : minSizePossible;
-            newHeight = newHeight < 0 ? -minSizePossible : minSizePossible;
-          }
-
-          return { ...el, width: newWidth, height: newHeight };
-        }
-
-        return el;
-      }));
 
       return;
     }
     
-    if (isResizing && selectedIds.length === 1) {
-      let effectiveMouseX = mouseX;
-      let effectiveMouseY = mouseY;
+    if (interaction === Interaction.RESIZING && selectedIds.length === 1) {
+      let effectiveMouseX = x;
+      let effectiveMouseY = y;
       const isCornerHandle = activeHandle && CORNER_HANDLES.includes(activeHandle);
 
       if (isShiftPressed && resizeAnchor && isCornerHandle) {
         const el = elements.find(e => e.id === selectedIds[0]);
         if (el) {
           const ratio = Math.abs(el.width / el.height);
-          const dx = mouseX - resizeAnchor.x;
-          const dy = mouseY - resizeAnchor.y;
+          const dx = x - resizeAnchor.x;
+          const dy = y - resizeAnchor.y;
           const localDX = dx * Math.cos(-el.angle) - dy * Math.sin(-el.angle);
           const localDY = dx * Math.sin(-el.angle) + dy * Math.cos(-el.angle);
           const constrainedDY = (localDY < 0 ? -1 : 1) * (Math.abs(localDX) / ratio);
@@ -258,43 +246,92 @@ export default function WhiteBoard() {
         }
       }
 
-      setElements((prev) =>
-        prev.map((el) => {
-          if (el.id !== selectedIds[0]) return el;
+      dispatchWhiteBoardState({
+        type: 'SET_ELEMENTS', updater: (prev: Element[]) => prev.map((el) => {
+          if (el.id !== selectedIds[0]) { return el; }
           return updateElementPropertiesUsingHandles(activeHandle, el, effectiveMouseX, effectiveMouseY, resizeAnchor);
-        })
-      );
+      })})
     }
   }
 
-  function handleMouseUp(): void {
-    setIsResizing(false);
-    setIsDrawing(false);
-    setIsMoving(false);
-    setIsSelecting(false);
-    setSelectionBox(null);
+  function handleMouseUp(e: React.MouseEvent): void {
     setActiveHandle(null);
     setResizeAnchor(null);
-    setIsPanning(false);
+    dispatchWhiteBoardState({ type: 'END_INTERACTION' });
 
     const canvas = canvasRef.current;
-      if (canvas) {
-        canvas.style.cursor = tool === Tool.SELECT ? CursorStyles.DEFAULT : CursorStyles.CROSSHAIR;
+
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const { x, y } = getCanvasPoint(e, canvas, pan, zoom);
+      let nextCursor = tool === Tool.SELECT ? 'default' : 'crosshair';
+
+      if (tool === Tool.SELECT && selectedIds.length === 1) {
+        const selected = elements.find((el) => el.id === selectedIds[0]);
+        if (selected && ctx) {
+          const hoveredHandle = getHandleAtPosition(x, y, selected);
+          if (hoveredHandle) {
+            nextCursor = getCursorForHandle(selected.angle, hoveredHandle, false);
+          } else if (isMouseOnElement(x, y, selected, ctx)) {
+            nextCursor = CursorStyles.GRAB;
+          }
+        }
       }
 
-    setElements((prev: Element[]) =>
-      prev.map((el) => {
-        const newX = el.width < 0 ? el.x + el.width : el.x;
-        const newY = el.height < 0 ? el.y + el.height : el.y;
-        return {
-          ...el,
-          x: newX,
-          y: newY,
-          width: Math.abs(el.width),
-          height: Math.abs(el.height),
-        };
-      })
-    );
+      canvas.style.cursor = nextCursor;
+    }
+
+    dispatchWhiteBoardState({ type: 'NORMALIZE_ELEMENTS' });
+  }
+
+  function handleBackToContent(): void {
+    if (elements.length === 0) { return; }
+    
+    const { minValues, maxValues } = contentBounds;
+    const contentCenter: Coordinates2D = {
+      x: (minValues.x + maxValues.x) / 2,
+      y: (minValues.y + maxValues.y) / 2,
+    };
+    
+    setPan({
+      x: (canvasSize.width / 2) - contentCenter.x,
+      y: (canvasSize.height / 2) - contentCenter.y,
+    });
+    setZoom(1);
+  }
+
+  function handleWheel(e: React.WheelEvent): void {
+    if (e.ctrlKey || e.metaKey) {
+      const zoomSensitivity = 0.01;
+      const delta = -e.deltaY * zoomSensitivity;
+      let newZoom = zoom * (1 + delta);
+      newZoom = Math.max(0.1, Math.min(newZoom, 3)); // limits zoom to 300%
+
+      const canvas = canvasRef.current;
+
+      if (!canvas) { return; }
+
+      const canvasRect = canvas.getBoundingClientRect();
+      zoomTo(newZoom, e.clientX - canvasRect.left, e.clientY - canvasRect.top);
+      return;
+    }
+
+    setPan((prev) => ({
+      x: prev.x - e.deltaX,
+      y: prev.y - e.deltaY,
+    }));
+  }
+
+  function handleZoomUI(delta: number) {
+    let newZoom = zoom + delta;
+    newZoom = Math.max(0.1, Math.min(newZoom, 3));
+    zoomTo(newZoom, canvasSize.width / 2, canvasSize.height / 2)
+  }
+
+  function handleResetZoom() {
+    if (zoom === 1) { return; }
+
+    zoomTo(1, canvasSize.width / 2, canvasSize.height / 2);
   }
 
   useLayoutEffect(() => {
@@ -305,7 +342,7 @@ export default function WhiteBoard() {
     if (canvasSize.width === 0 || canvasSize.height === 0) {
       return;
     }
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) {
       return;
     }
@@ -313,82 +350,8 @@ export default function WhiteBoard() {
     canvas.width = canvasSize.width;
     canvas.height = canvasSize.height;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.translate(pan.x, pan.y);
-
-    elements.forEach((el) => {
-      ctx.save();
-
-      const isSelected = selectedIds.includes(el.id);
-      const centerX = el.x + el.width / 2;
-      const centerY = el.y + el.height / 2;
-      const halfW = el.width / 2;
-      const halfH = el.height / 2;
-
-      ctx.translate(centerX, centerY);
-      ctx.rotate(el.angle);
-      ctx.beginPath();
-
-      if (el.shape === Shape.RHOMBUS) {
-        ctx.moveTo(0, -halfH);
-        ctx.lineTo(halfW, 0);
-        ctx.lineTo(0, halfH);
-        ctx.lineTo(-halfW, 0);
-        ctx.closePath();
-      } else if (el.shape === Shape.OVAL) {
-        ctx.ellipse(0, 0, Math.abs(halfW), Math.abs(halfH), 0, 0, Math.PI * 2);
-      } else  if (el.shape === Shape.RECTANGLE) {
-        ctx.rect(-halfW, -halfH, el.width, el.height);
-      }
-
-      // Draw Fill
-      if (el.fill) {
-        ctx.fillStyle = isSelected ? "rgba(59, 130, 246, 0.5)" : "rgba(0, 0, 0, 0.1)";
-        ctx.fill();
-      }
-
-      ctx.strokeStyle = isSelected ? "#3b82f6" : "#000";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      if (isSelected) {
-        // 1. Calculate visual (positive) half-dimensions
-        if (selectedIds.length === 1) {
-          ctx.fillStyle = "#3b82f6";
-          const absHalfW = Math.abs(el.width) / 2;
-          const absHalfH = Math.abs(el.height) / 2;
-
-          ctx.fillRect(-absHalfW - 4, -absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
-          ctx.fillRect(absHalfW - 4, -absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
-          ctx.fillRect(-absHalfW - 4, absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
-          ctx.fillRect(absHalfW - 4, absHalfH - 4, HANDLE_SIZE, HANDLE_SIZE);
-
-          ctx.beginPath();
-          ctx.arc(0, -absHalfH - 25, 6, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      ctx.restore(); // Clean up for the next element
-    });
-
-    // creating marquee for selecting elements
-    if (isSelecting && selectionBox) {
-      ctx.setLineDash([5, 5]);
-      ctx.strokeStyle = "rgba(59, 130, 246, 0.8)";
-      ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
-      const x = Math.min(selectionBox.x1, selectionBox.x2);
-      const y = Math.min(selectionBox.y1, selectionBox.y2);
-      const w = Math.abs(selectionBox.x2 - selectionBox.x1);
-      const h = Math.abs(selectionBox.y2 - selectionBox.y1);
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeRect(x, y, w, h);
-      ctx.setLineDash([]);
-    }
-
-    ctx.restore();
-  }, [elements, selectedIds, isSelecting, selectionBox, canvasSize, pan.x, pan.y]);
+    drawCanvas(ctx, canvas, elements, pan, zoom, selectedIds, selectionBox, interaction);
+  }, [elements, selectedIds, interaction, selectionBox, canvasSize, pan, zoom]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -410,66 +373,9 @@ export default function WhiteBoard() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat) {
-        return;
-      }
-
-      const key = event.key.toLowerCase();
-      if (event.key === KeyboardKeys.SPACEBAR) {
-        const canvas = canvasRef.current;
-        if (!canvas) { return; }
-
-        event.preventDefault();
-        setIsSpacePressed(true);
-        canvas.style.cursor = CursorStyles.GRAB;
-        return;
-      }
-
-      if (key === KeyboardKeys.BACKSPACE && selectedIds.length) {
-        setElements((prev) =>
-          prev.filter((el) => {
-            return !selectedIds.includes(el.id);
-          }),
-        );
-        setSelectedIds([]);
-      } else if (key === KeyboardKeys.V) {
-        setTool(Tool.SELECT);
-      } else if (key === KeyboardKeys.D) {
-        setSelectedIds([]);
-        setTool(Tool.DRAW_RECTANGLE);
-      } else if (key === KeyboardKeys.R) {
-        setSelectedIds([]);
-        setTool(Tool.DRAW_RHOMBUS);
-      } else if (key === KeyboardKeys.O) {
-        setSelectedIds([]);
-        setTool(Tool.DRAW_OVAL);
-      } else if (key === KeyboardKeys.SHIFT) {
-        setIsShiftPressed(true);
-      }
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
-
-      if (event.key === KeyboardKeys.SPACEBAR) {
-        setIsSpacePressed(false);
-        return;
-      }
-      if (key === KeyboardKeys.SHIFT) {
-        setIsShiftPressed(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [selectedIds]);
+  useKeyboardShortcuts({
+    canvasRef, selectedIds, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -484,23 +390,73 @@ export default function WhiteBoard() {
     }
   }, [tool, isSpacePressed]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) { return; }
+    const preventDefault = (e: WheelEvent | MouseEvent) => {
+      if (e.ctrlKey || e.metaKey) { e.preventDefault(); }
+      if (e instanceof MouseEvent && e.button === 1) { e.preventDefault(); }
+    };
+
+    canvas.addEventListener('wheel', preventDefault, { passive: false });
+    canvas.addEventListener('mousedown', preventDefault, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('wheel', preventDefault);
+      canvas.removeEventListener('mousedown', preventDefault);
+    };
+  }, []);
+
+  let showBackToContent: boolean = false;
+  if (elements.length > 0 && canvasSize.width > 0) { 
+    const { minValues, maxValues } = contentBounds;
+    
+    const viewportMin: Coordinates2D = { x: -pan.x / zoom, y: -pan.y / zoom };
+    const viewportMax: Coordinates2D = { x: (-pan.x + canvasSize.width) / zoom, y: (-pan.y + canvasSize.height) / zoom };
+    const isNotVisible = minValues.x < viewportMax.x && maxValues.x > viewportMin.x &&
+      minValues.y < viewportMax.y && maxValues.y > viewportMin.y;
+    showBackToContent = !isNotVisible;
+  }
+
   return (
-  <div className="fixed inset-0 overflow-hidden bg-slate-200">
-    {/* Refined Top Navbar */}
-      <ShapesNavbar 
-        tool={tool}
-        setTool={setTool}
-        setSelectedId={setSelectedIds}
-        setIsSpacePressed={setIsSpacePressed}
-      />
+  <div className='fixed inset-0 overflow-hidden bg-slate-200'>
+    <ShapesNavbar 
+      tool={tool}
+      dispatchWhiteBoardState={dispatchWhiteBoardState}  
+      setIsSpacePressed={setIsSpacePressed}
+    />
+
+    <div className='absolute bottom-6 left-6 z-20 flex items-center bg-white rounded-lg shadow-md border border-[#EBEAF0] px-1 py-1 text-sm font-medium text-[#3F3F49]'>
+      <button onClick={() => handleZoomUI(-0.1)} className='w-7 h-7 flex items-center justify-center hover:bg-[#F4F4F7] rounded-md cursor-pointer transition-colors'>-</button>
+      <span className='w-11 text-center select-none'>{Math.round(zoom * 100)}%</span>
+      <button onClick={() => handleZoomUI(0.1)} className='w-7 h-7 flex items-center justify-center hover:bg-[#F4F4F7] rounded-md cursor-pointer transition-colors'>+</button>
+      
+      <span aria-hidden className='w-px h-5 mx-1 bg-[#E7E5EC] shrink-0' />
+
+      <button 
+        onClick={handleResetZoom} 
+        className='px-2 h-7 flex items-center justify-center hover:bg-[#F4F4F7] rounded-md cursor-pointer transition-colors'
+        title='Reset zoom to 100%'>
+        Reset
+      </button>
+    </div>
+
+    {showBackToContent && (
+      <button
+        onClick={handleBackToContent}
+        className='absolute bottom-8 left-1/2 -translate-x-1/2 z-20 px-4 py-2 bg-[#6246EA] text-white text-sm font-medium rounded-full shadow-[0_8px_24px_-8px_rgba(98,70,234,0.5)] hover:bg-[#5238cc] transition-colors cursor-pointer flex items-center gap-2'
+      >
+        Back to Content
+      </button>
+    )}
 
     <canvas
       ref={canvasRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      // style={{ cursor: tool === Tool.SELECT ? 'default' : 'crosshair' }}
-      className="absolute top-0 left-0 w-full h-full block bg-white touch-none shadow-inner" />
+      onWheel={handleWheel}
+      className='absolute top-0 left-0 w-full h-full block bg-white touch-none shadow-inner' />
   </div>
   );
 }

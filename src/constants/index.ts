@@ -1,3 +1,5 @@
+import { Shape, Tool, WhiteboardState } from "@/interfaces";
+
 export enum KeyboardKeys {
    SHIFT = 'shift',
    O = 'o',
@@ -21,4 +23,16 @@ export enum CursorStyles {
    NS_RESIZE = 'ns-resize',
    NESW_RESIZE = 'nesw-resize',
    CROSSHAIR = 'crosshair'
+};
+
+export const initialWhiteBoardState: WhiteboardState = {
+   elements: [
+      { id: 1, x: 100, y: 100, width: 350, height: 300, angle: 0 , fill: true, shape: Shape.RECTANGLE, },
+      { id: 3, x: 100, y: 100, width: 350, height: 300, angle: 90 , fill: true, shape: Shape.RECTANGLE, },
+      { id: 2, x:600, y: 200, width: 350, height: 300, angle: 0, fill: false, shape: Shape.RECTANGLE },
+   ],
+   selectedIds: [],
+   selectionBox: null,
+   interaction: "idle",
+   tool: Tool.SELECT,
 };

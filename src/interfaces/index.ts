@@ -23,7 +23,26 @@ export interface Element {
   shape: Shape;
 };
 
+export interface Coordinates2D {
+  x: number;
+  y: number;
+}
+
 export type ResizeHandle =
   'top-left' | 'bottom-right' | 'top-right' | 'bottom-left' | 'rotation' |
   'top' | 'bottom' | 'left' | 'right' |
   null;
+
+// export type Interaction = 'idle' | 'selecting' | 'moving' | 'resizing' | 'drawing' | 'panning';
+
+export enum Interaction {
+  IDLE = 'idle',
+  SELECTING = 'selecting',
+  MOVING = 'moving',
+  RESIZING = 'resizing',
+  DRAWING = 'drawing',
+  PANNING = 'panning'
+}
+
+export * from './hooks-props.interfaces';
+export * from './states.interfaces';
