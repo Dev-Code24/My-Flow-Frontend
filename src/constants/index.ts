@@ -1,4 +1,4 @@
-import { Shape, Tool, WhiteboardState } from "@/interfaces";
+import { Interaction, Shape, Tool, WhiteboardState } from "@/interfaces";
 
 export enum KeyboardKeys {
    SHIFT = 'shift',
@@ -33,6 +33,6 @@ export const initialWhiteBoardState: WhiteboardState = {
    ],
    selectedIds: [],
    selectionBox: null,
-   interaction: "idle",
+   interaction: Interaction.IDLE,
    tool: Tool.SELECT,
 };

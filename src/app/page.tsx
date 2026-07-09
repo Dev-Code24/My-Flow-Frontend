@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { ResizeHandle, Tool, Element, Coordinates2D, Interaction } from '@/interfaces';
+import { ResizeHandle, Tool, Element, Coordinates2D, Interaction, WhiteboardState, WhiteboardAction } from '@/interfaces';
 import { CORNER_HANDLES, CursorStyles, initialWhiteBoardState, MIN_SHAPE_SIZE } from '@/constants';
 import ShapesNavbar from '@/components/ShapesNavbar';
 import { getCanvasPoint, getContentBounds, getCursorForHandle, getHandleAtPosition, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles } from '@/utils';
@@ -11,7 +11,7 @@ import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
 
 export default function WhiteBoard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [whiteBoardState, dispatchWhiteBoardState] = useReducer(whiteboardReducer, initialWhiteBoardState);
+  const [whiteBoardState, dispatchWhiteBoardState] = useReducer<WhiteboardState, [action: WhiteboardAction]>(whiteboardReducer, initialWhiteBoardState);
   const { elements, interaction, selectedIds, selectionBox, tool } = whiteBoardState;
 
   const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });

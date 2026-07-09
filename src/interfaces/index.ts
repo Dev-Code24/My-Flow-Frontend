@@ -30,10 +30,7 @@ export interface Coordinates2D {
 
 export type ResizeHandle =
   'top-left' | 'bottom-right' | 'top-right' | 'bottom-left' | 'rotation' |
-  'top' | 'bottom' | 'left' | 'right' |
-  null;
-
-// export type Interaction = 'idle' | 'selecting' | 'moving' | 'resizing' | 'drawing' | 'panning';
+  'top' | 'bottom' | 'left' | 'right' | null;
 
 export enum Interaction {
   IDLE = 'idle',

@@ -63,4 +63,7 @@ export type WhiteboardAction =
    | {
       type: "CHANGE_TOOL";
       tool: Tool;
+   }
+   | {
+      type: "DELETE_SELECTED"
    };

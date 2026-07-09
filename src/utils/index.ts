@@ -237,10 +237,10 @@ export function getCursorForHandle(angle: number, handle: ResizeHandle, isResizi
 }
 
 export function getCanvasPoint(e: React.MouseEvent, canvas: HTMLCanvasElement, pan: Coordinates2D, zoom: number): {
-    rawX: number;
-    rawY: number;
-    x: number;
-    y: number;
+  rawX: number;
+  rawY: number;
+  x: number;
+  y: number;
 } {
   const rect = canvas.getBoundingClientRect();
   const { mouseX, mouseY } = getMouseXY(e, rect);

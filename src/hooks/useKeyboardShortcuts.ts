@@ -1,84 +1,80 @@
 import { useEffect } from "react";
-import { Element, Tool } from "@/interfaces";
+import { Tool } from "@/interfaces";
 import { CursorStyles, KeyboardKeys } from "@/constants";
 import { UseKeyboardShortcutsProps } from "@/interfaces/hooks-props.interfaces";
 
-export function useKeyboardShortcuts({
-   canvasRef,
-   selectedIds,
-   dispatchWhiteBoardState,
-   setIsSpacePressed,
-   setIsShiftPressed
-}: UseKeyboardShortcutsProps): void {
-   useEffect(() => {
-      const handleKeyDown = (event: KeyboardEvent) => {
-         if (event.repeat) { return; }
+export function useKeyboardShortcuts({ canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed }: UseKeyboardShortcutsProps): void {
+	useEffect(() => {
+		const changeTool = (tool: Tool) => {
+			dispatchWhiteBoardState({
+				type: "CHANGE_TOOL",
+				tool,
+			});
+		};
 
-         const key = event.key.toLowerCase();
-         if (event.key === KeyboardKeys.SPACEBAR) {
-            const canvas = canvasRef.current;
-            if (!canvas) { return; }
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.repeat) { return; }
 
-            event.preventDefault();
-            setIsSpacePressed(true);
-            canvas.style.cursor = CursorStyles.GRAB;
-            return;
-         }
+			const key = event.key.toLowerCase();
 
-         if (key === KeyboardKeys.BACKSPACE && selectedIds.length) {
-            // setElements((prev) =>
-            //    prev.filter((el) => {
-            //    return !selectedIds.includes(el.id);
-            // }),
-            // );
-            // setSelectedIds([]);
-            dispatchWhiteBoardState({
-               type: 'SET_ELEMENTS', updater: (prev: Element[]) => prev.filter((el) => {
-                  return !selectedIds.includes(el.id);
-               }),
-            });
-            dispatchWhiteBoardState({ type: 'SET_SELECTION', ids: [] });
-         } else if (key === KeyboardKeys.V) {
-            // setTool(Tool.SELECT);
-            dispatchWhiteBoardState({ type: 'SET_TOOL', tool: Tool.SELECT });
-         } else if (key === KeyboardKeys.D) {
-            // setSelectedIds([]);
-            // setTool(Tool.DRAW_RECTANGLE);
-            dispatchWhiteBoardState({ type: 'SET_SELECTION', ids: [] });
-            dispatchWhiteBoardState({ type: 'SET_TOOL', tool: Tool.DRAW_RECTANGLE });
-         } else if (key === KeyboardKeys.R) {
-            // setSelectedIds([]);
-            // setTool(Tool.DRAW_RHOMBUS);
-            dispatchWhiteBoardState({ type: 'SET_SELECTION', ids: [] });
-            dispatchWhiteBoardState({ type: 'SET_TOOL', tool: Tool.DRAW_RHOMBUS });
-         } else if (key === KeyboardKeys.O) {
-            // setSelectedIds([]);
-            // setTool(Tool.DRAW_OVAL);
-            dispatchWhiteBoardState({ type: 'SET_SELECTION', ids: [] });
-            dispatchWhiteBoardState({ type: 'SET_TOOL', tool: Tool.DRAW_OVAL });
-         } else if (key === KeyboardKeys.SHIFT) {
-            setIsShiftPressed(true);
-         }
-      };
+			if (event.key === KeyboardKeys.SPACEBAR) {
+				const canvas = canvasRef.current;
+				if (!canvas) { return; }
 
-      const handleKeyUp = (event: KeyboardEvent) => {
-         const key = event.key.toLowerCase();
+				event.preventDefault();
+				setIsSpacePressed(true);
+				canvas.style.cursor = CursorStyles.GRAB;
+				return;
+			}
 
-         if (event.key === KeyboardKeys.SPACEBAR) {
-            setIsSpacePressed(false);
-            return;
-         }
-         if (key === KeyboardKeys.SHIFT) {
-            setIsShiftPressed(false);
-         }
-      };
+			switch (key) {
+				case KeyboardKeys.BACKSPACE:
+					dispatchWhiteBoardState({
+						type: "DELETE_SELECTED",
+					});
+					return;
 
-      window.addEventListener("keydown", handleKeyDown);
-      window.addEventListener("keyup", handleKeyUp);
+				case KeyboardKeys.V:
+					changeTool(Tool.SELECT);
+					return;
 
-      return () => {
-         window.removeEventListener("keydown", handleKeyDown);
-         window.removeEventListener("keyup", handleKeyUp);
-      };
-   }, [canvasRef, dispatchWhiteBoardState, selectedIds, setIsShiftPressed, setIsSpacePressed]);
+				case KeyboardKeys.D:
+					changeTool(Tool.DRAW_RECTANGLE);
+					return;
+
+				case KeyboardKeys.R:
+					changeTool(Tool.DRAW_RHOMBUS);
+					return;
+
+				case KeyboardKeys.O:
+					changeTool(Tool.DRAW_OVAL);
+					return;
+
+				case KeyboardKeys.SHIFT:
+					setIsShiftPressed(true);
+					return;
+			}
+		};
+
+		const handleKeyUp = (event: KeyboardEvent) => {
+			const key = event.key.toLowerCase();
+
+			if (event.key === KeyboardKeys.SPACEBAR) {
+				setIsSpacePressed(false);
+				return;
+			}
+
+			if (key === KeyboardKeys.SHIFT) {
+				setIsShiftPressed(false);
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+		};
+	}, [canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed]);
 }
