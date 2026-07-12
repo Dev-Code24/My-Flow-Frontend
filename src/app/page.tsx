@@ -1,16 +1,23 @@
 'use client'
 
 import React, { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
+import ShapesNavbar from '@/components/ShapesNavbar';
+import ShareModal from '@/components/ShareModal';
+
 import { ResizeHandle, Tool, Element, Coordinates2D, Interaction, WhiteboardState, WhiteboardAction } from '@/interfaces';
 import { CORNER_HANDLES, CursorStyles, initialWhiteBoardState, MIN_SHAPE_SIZE } from '@/constants';
-import ShapesNavbar from '@/components/ShapesNavbar';
 import { getCanvasPoint, getContentBounds, getCursorForHandle, getHandleAtPosition, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles } from '@/utils';
 import { drawCanvas } from '@/utils/draw-canvas';
+
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useStartSession } from '@/hooks/useStartSession';
+import { useExportFlow } from '@/hooks/useShareFlow';
+
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
 
 export default function WhiteBoard() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
   const [whiteBoardState, dispatchWhiteBoardState] = useReducer<WhiteboardState, [action: WhiteboardAction]>(whiteboardReducer, initialWhiteBoardState);
   const { elements, interaction, selectedIds, selectionBox, tool } = whiteBoardState;
 
@@ -24,6 +31,9 @@ export default function WhiteBoard() {
   const [zoom, setZoom] = useState<number>(1); // (1 = 100%)
 
   const contentBounds = useMemo(() => getContentBounds(elements), [elements]);
+
+  const { startSession, isStartingSession } = useStartSession();
+  const { exportFlow, isExporting } = useExportFlow();
 
   function zoomTo(targetZoom: number, centerX: number, centerY: number) {
     const clampedZoom = Math.max(0.1, Math.min(targetZoom, 3));
@@ -334,6 +344,10 @@ export default function WhiteBoard() {
     zoomTo(1, canvasSize.width / 2, canvasSize.height / 2);
   }
 
+  async function handleExportToLink(): Promise<void> {
+    await exportFlow({ elements, pan, zoom });
+  }
+
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !canvas.getContext) {
@@ -456,7 +470,15 @@ export default function WhiteBoard() {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onWheel={handleWheel}
-      className='absolute top-0 left-0 w-full h-full block bg-white touch-none shadow-inner' />
-  </div>
+      className='absolute top-0 left-0 w-full h-full block bg-white touch-none shadow-inner'
+    />
+
+    <ShareModal
+      onStartSession={startSession}
+      onExportToLink={handleExportToLink}
+      isStartingSession={isStartingSession}
+      isExporting={isExporting}
+    />
+    </div>
   );
 }
