@@ -9,7 +9,7 @@ export interface SelectionBox {
 
 export interface WhiteboardState {
    elements: Element[];
-   selectedIds: number[];
+   selectedIds: string[];
    selectionBox: SelectionBox | null;
    interaction: Interaction;
    tool: Tool;
@@ -30,7 +30,7 @@ export type WhiteboardAction =
    }
    | {
       type: "SELECT_ELEMENT";
-      id: number;
+      id: string;
    }
    | {
       type: "CLEAR_SELECTION";

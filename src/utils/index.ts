@@ -269,3 +269,79 @@ export function getContentBounds(elements: Element[]): { minValues: Coordinates2
 
   return { minValues, maxValues };
 }
+
+export function getInitialDrawingDimensions(
+	rawWidth: number,
+	rawHeight: number,
+	isShiftPressed: boolean
+): {
+	width: number;
+	height: number;
+} {
+	const widthDirection = rawWidth < 0 ? -1 : 1;
+
+	const heightDirection = rawHeight < 0 ? -1 : 1;
+
+	if (isShiftPressed) {
+		const side = Math.max(Math.abs(rawWidth), Math.abs(rawHeight),  MIN_SHAPE_SIZE);
+
+		return {
+			width: widthDirection * side,
+			height: heightDirection * side,
+		};
+	}
+
+	return {
+		width:widthDirection * Math.max(Math.abs(rawWidth), MIN_SHAPE_SIZE),
+		height: heightDirection * Math.max(Math.abs(rawHeight), MIN_SHAPE_SIZE),
+	};
+}
+
+export function getResizeAnchor(element: Element, handle: ResizeHandle): Coordinates2D | null {
+	const centerX = element.x + element.width / 2;
+	const centerY = element.y + element.height / 2;
+	const halfWidth = element.width / 2;
+	const halfHeight = element.height / 2;
+
+	function toGlobalCoordinates(localX: number, localY: number): Coordinates2D {
+		return {
+			x: centerX + localX * Math.cos(element.angle) - localY * Math.sin(element.angle),
+			y: centerY + localX * Math.sin(element.angle) + localY * Math.cos(element.angle),
+		};
+	}
+
+	switch (handle) {
+		case "top-left":
+		case "top":
+		case "left":
+			return toGlobalCoordinates(halfWidth, halfHeight);
+
+		case "top-right":
+			return toGlobalCoordinates(-halfWidth, halfHeight);
+
+		case "bottom-right":
+		case "bottom":
+		case "right":
+			return toGlobalCoordinates(-halfWidth, -halfHeight);
+
+		case "bottom-left":
+			return toGlobalCoordinates(halfWidth, -halfHeight);
+
+		default:
+			return null;
+	}
+}
+
+export function constrainResizeToAspectRatio(element: Element, mouseX: number, mouseY: number, anchor: Coordinates2D): Coordinates2D {
+	const aspectRatio = Math.abs(element.width / element.height);
+	const dx = mouseX - anchor.x;
+	const dy = mouseY - anchor.y;
+	const localDX = dx * Math.cos(-element.angle) - dy * Math.sin(-element.angle);
+	const localDY = dx * Math.sin(-element.angle) + dy * Math.cos(-element.angle);
+	const constrainedDY = (localDY < 0 ? -1 : 1) * (Math.abs(localDX) / aspectRatio);
+
+	return {
+		x: anchor.x + (localDX * Math.cos(element.angle) - constrainedDY * Math.sin(element.angle)),
+		y: anchor.y + (localDX * Math.sin(element.angle) + constrainedDY * Math.cos(element.angle)),
+	};
+}

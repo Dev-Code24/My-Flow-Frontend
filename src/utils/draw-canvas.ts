@@ -6,7 +6,7 @@ export function drawCanvas(
    elements: Element[],
    pan: Coordinates2D,
    zoom: number,
-   selectedIds: number[],
+   selectedIds: string[],
    selectionBox: { x1: number, y1: number, x2: number, y2: number } | null,
    interaction: Interaction
 ): void {
