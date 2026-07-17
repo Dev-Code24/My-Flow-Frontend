@@ -1,4 +1,4 @@
-import { ApiErrorOptions, ApiErrorType } from "@/lib/interfaces";
+import { ApiErrorOptions, ApiErrorType } from '@/lib/interfaces';
 
 export class ApiError extends Error {
   public readonly type: ApiErrorType;
@@ -14,7 +14,7 @@ export class ApiError extends Error {
   ) {
     super(message, { cause });
 
-    this.name = "ApiError";
+    this.name = 'ApiError';
     this.type = type;
     this.status = status;
   }

@@ -6,17 +6,13 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-
   header?: React.ReactNode;
   footer?: React.ReactNode;
-
   closable?: boolean;
   closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
-
   width?: string;
   height?: string;
-
   className?: string;
   contentClassName?: string;
   headerClassName?: string;

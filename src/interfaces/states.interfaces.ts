@@ -67,3 +67,5 @@ export type WhiteboardAction =
    | {
       type: "DELETE_SELECTED"
    };
+
+export type WhiteboardMode = "editable" | "readonly";

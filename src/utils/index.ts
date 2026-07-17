@@ -1,5 +1,5 @@
-import { CursorStyles, MIN_SHAPE_SIZE } from "@/constants";
-import { Coordinates2D, Element, ResizeHandle, Shape, Tool } from "@/interfaces";
+import { CursorStyles, MIN_SHAPE_SIZE } from '@/constants';
+import { Coordinates2D, Element, ResizeHandle, Shape, Tool } from '@/interfaces';
 
 export function getHandleAtPosition(mx: number, my: number, el: Element): ResizeHandle {
   const centerX = el.x + el.width / 2;
@@ -29,10 +29,6 @@ export function getHandleAtPosition(mx: number, my: number, el: Element): Resize
   if (isXWithin && Math.abs(localY - absHalfH) < THRESHOLD) { return 'bottom'; }
 
   return null;
-}
-
-export function getMouseXY(e: React.MouseEvent, rect: DOMRect): { mouseX: number, mouseY: number } {
-  return { mouseX: e.clientX - rect.left, mouseY: e.clientY - rect.top };
 }
 
 export function isMouseOnElement(
@@ -236,23 +232,6 @@ export function getCursorForHandle(angle: number, handle: ResizeHandle, isResizi
   return CursorStyles.DEFAULT;
 }
 
-export function getCanvasPoint(e: React.MouseEvent, canvas: HTMLCanvasElement, pan: Coordinates2D, zoom: number): {
-  rawX: number;
-  rawY: number;
-  x: number;
-  y: number;
-} {
-  const rect = canvas.getBoundingClientRect();
-  const { mouseX, mouseY } = getMouseXY(e, rect);
-
-  return {
-    rawX: mouseX,
-    rawY: mouseY,
-    x: (mouseX - pan.x) / zoom,
-    y: (mouseY - pan.y) / zoom,
-  };
-}
-
 export function getContentBounds(elements: Element[]): { minValues: Coordinates2D; maxValues: Coordinates2D; } {
   const minValues: Coordinates2D = { x: Infinity, y: Infinity };
   const maxValues: Coordinates2D = { x: -Infinity, y: -Infinity };
@@ -297,51 +276,4 @@ export function getInitialDrawingDimensions(
 	};
 }
 
-export function getResizeAnchor(element: Element, handle: ResizeHandle): Coordinates2D | null {
-	const centerX = element.x + element.width / 2;
-	const centerY = element.y + element.height / 2;
-	const halfWidth = element.width / 2;
-	const halfHeight = element.height / 2;
-
-	function toGlobalCoordinates(localX: number, localY: number): Coordinates2D {
-		return {
-			x: centerX + localX * Math.cos(element.angle) - localY * Math.sin(element.angle),
-			y: centerY + localX * Math.sin(element.angle) + localY * Math.cos(element.angle),
-		};
-	}
-
-	switch (handle) {
-		case "top-left":
-		case "top":
-		case "left":
-			return toGlobalCoordinates(halfWidth, halfHeight);
-
-		case "top-right":
-			return toGlobalCoordinates(-halfWidth, halfHeight);
-
-		case "bottom-right":
-		case "bottom":
-		case "right":
-			return toGlobalCoordinates(-halfWidth, -halfHeight);
-
-		case "bottom-left":
-			return toGlobalCoordinates(halfWidth, -halfHeight);
-
-		default:
-			return null;
-	}
-}
-
-export function constrainResizeToAspectRatio(element: Element, mouseX: number, mouseY: number, anchor: Coordinates2D): Coordinates2D {
-	const aspectRatio = Math.abs(element.width / element.height);
-	const dx = mouseX - anchor.x;
-	const dy = mouseY - anchor.y;
-	const localDX = dx * Math.cos(-element.angle) - dy * Math.sin(-element.angle);
-	const localDY = dx * Math.sin(-element.angle) + dy * Math.cos(-element.angle);
-	const constrainedDY = (localDY < 0 ? -1 : 1) * (Math.abs(localDX) / aspectRatio);
-
-	return {
-		x: anchor.x + (localDX * Math.cos(element.angle) - constrainedDY * Math.sin(element.angle)),
-		y: anchor.y + (localDX * Math.sin(element.angle) + constrainedDY * Math.cos(element.angle)),
-	};
-}
+export * from './interactions.utils';

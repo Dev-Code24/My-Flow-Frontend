@@ -1,6 +1,6 @@
-import { ENV_CONFIG } from "@/lib/config";
-import { ApiResponse, RequestOptions } from "@/lib/interfaces";
-import { createHttpError, createRequestHeaders, normalizeApiError, parseApiResponse, serializeBody, showInfrastructureError } from "@/lib/utils";
+import { ENV_CONFIG } from '@/lib/config';
+import { ApiResponse, RequestOptions } from '@/lib/interfaces';
+import { createHttpError, createRequestHeaders, normalizeApiError, parseApiResponse, serializeBody, showInfrastructureError } from '@/lib/utils';
 
 const API_BASE_URL = ENV_CONFIG.API_BASE_URL;
 const DEFAULT_TIMEOUT = 10_000;
@@ -53,21 +53,21 @@ async function request<T>(
 }
 
 export const api = {
-   get<T>(url: string, init?: Omit<RequestOptions, "body" | "method">) {
+   get<T>(url: string, init?: Omit<RequestOptions, 'body' | 'method'>) {
       return request<T>(url, {
          ...init,
-         method: "GET",
+         method: 'GET',
       });
    },
 
    post<T>(
       url: string,
       body?: unknown,
-      init?: Omit<RequestOptions, "body" | "method">
+      init?: Omit<RequestOptions, 'body' | 'method'>
    ) {
       return request<T>(url, {
          ...init,
-         method: "POST",
+         method: 'POST',
          body,
       });
    },
@@ -75,11 +75,11 @@ export const api = {
    put<T>(
       url: string,
       body?: unknown,
-      init?: Omit<RequestOptions, "body" | "method">
+      init?: Omit<RequestOptions, 'body' | 'method'>
    ) {
       return request<T>(url, {
          ...init,
-         method: "PUT",
+         method: 'PUT',
          body,
       });
    },
@@ -87,22 +87,22 @@ export const api = {
    patch<T>(
       url: string,
       body?: unknown,
-      init?: Omit<RequestOptions, "body" | "method">
+      init?: Omit<RequestOptions, 'body' | 'method'>
    ) {
       return request<T>(url, {
          ...init,
-         method: "PATCH",
+         method: 'PATCH',
          body,
       });
    },
 
    delete<T>(
       url: string,
-      init?: Omit<RequestOptions, "body" | "method">
+      init?: Omit<RequestOptions, 'body' | 'method'>
    ) {
       return request<T>(url, {
          ...init,
-         method: "DELETE",
+         method: 'DELETE',
       });
    },
 };

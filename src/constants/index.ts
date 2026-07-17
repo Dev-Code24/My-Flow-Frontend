@@ -1,4 +1,4 @@
-import { Interaction, Shape, Tool, WhiteboardState } from "@/interfaces";
+import { Interaction, Shape, Tool, WhiteboardState } from '@/interfaces';
 
 export enum KeyboardKeys {
    SHIFT = 'shift',
@@ -27,9 +27,9 @@ export enum CursorStyles {
 
 export const initialWhiteBoardState: WhiteboardState = {
    elements: [
-      { id: crypto.randomUUID(), x: 100, y: 100, width: 350, height: 300, angle: 0 , fill: true, shape: Shape.RECTANGLE, },
-      { id: crypto.randomUUID(), x: 100, y: 100, width: 350, height: 300, angle: 90 , fill: true, shape: Shape.RECTANGLE, },
-      { id: crypto.randomUUID(), x:600, y: 200, width: 350, height: 300, angle: 0, fill: false, shape: Shape.RECTANGLE },
+      // { id: crypto.randomUUID(), x: 100, y: 100, width: 350, height: 300, angle: 0 , fill: true, shape: Shape.RECTANGLE, },
+      // { id: crypto.randomUUID(), x: 100, y: 100, width: 350, height: 300, angle: 90 , fill: true, shape: Shape.RECTANGLE, },
+      // { id: crypto.randomUUID(), x:600, y: 200, width: 350, height: 300, angle: 0, fill: false, shape: Shape.RECTANGLE },
    ],
    selectedIds: [],
    selectionBox: null,

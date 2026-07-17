@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { RefObject, useEffect, useLayoutEffect, useState } from "react";
+import { RefObject, useEffect, useLayoutEffect, useState } from 'react';
 
-import { Coordinates2D, Element, Interaction, WhiteboardState } from "@/interfaces";
+import { Coordinates2D, Element, Interaction, WhiteboardState } from '@/interfaces';
 
-import { drawCanvas } from "@/utils/draw-canvas";
+import { drawCanvas } from '@/utils/draw-canvas';
 
 interface CanvasSize {
 	width: number;
@@ -17,7 +17,7 @@ interface WhiteboardSurfaceProps {
 	pan: Coordinates2D;
 	zoom: number;
 	selectedIds: string[];
-	selectionBox: WhiteboardState["selectionBox"];
+	selectionBox: WhiteboardState['selectionBox'];
 	interaction: Interaction;
 	onCanvasResize: (size: CanvasSize) => void;
 	onMouseDown?: (event: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -52,7 +52,7 @@ export default function WhiteboardSurface({
 			return;
 		}
 
-		const context = canvas.getContext("2d");
+		const context = canvas.getContext('2d');
 
 		if (!context) {
 			return;
@@ -109,7 +109,7 @@ export default function WhiteboardSurface({
 			onMouseMove={onMouseMove}
 			onMouseUp={onMouseUp}
 			onWheel={onWheel}
-			className="absolute left-0 top-0 block h-full w-full touch-none bg-white shadow-inner"
+			className='absolute left-0 top-0 block h-full w-full touch-none bg-white shadow-inner'
 		/>
 	);
 }

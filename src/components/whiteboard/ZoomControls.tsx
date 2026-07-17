@@ -13,41 +13,41 @@ interface ZoomControlsProps {
  }: ZoomControlsProps) {
    return (
      <div
-       className="absolute bottom-6 left-6 z-20 flex items-center rounded-lg border border-[#EBEAF0] bg-white px-1 py-1 text-sm font-medium text-[#3F3F49] shadow-md"
+       className='absolute bottom-6 left-6 z-20 flex items-center rounded-lg border border-[#EBEAF0] bg-white px-1 py-1 text-sm font-medium text-[#3F3F49] shadow-md'
      >
        <button
-         type="button"
+         type='button'
          onClick={onZoomOut}
-         aria-label="Zoom out"
-         className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[#F4F4F7]"
+         aria-label='Zoom out'
+         className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[#F4F4F7]'
        >
          -
        </button>
  
-       <span className="w-11 select-none text-center">
+       <span className='w-11 select-none text-center'>
          {Math.round(zoom * 100)}%
        </span>
  
        <button
-         type="button"
+         type='button'
          onClick={onZoomIn}
-         aria-label="Zoom in"
-         className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[#F4F4F7]"
+         aria-label='Zoom in'
+         className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-[#F4F4F7]'
        >
          +
        </button>
  
        <span
          aria-hidden
-         className="mx-1 h-5 w-px shrink-0 bg-[#E7E5EC]"
+         className='mx-1 h-5 w-px shrink-0 bg-[#E7E5EC]'
        />
  
        <button
-         type="button"
+         type='button'
          onClick={onResetZoom}
          disabled={zoom === 1}
-         title="Reset zoom to 100%"
-         className="flex h-7 cursor-pointer items-center justify-center rounded-md px-2 transition-colors hover:bg-[#F4F4F7] disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent"
+         title='Reset zoom to 100%'
+         className='flex h-7 cursor-pointer items-center justify-center rounded-md px-2 transition-colors hover:bg-[#F4F4F7] disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent'
        >
          Reset
        </button>

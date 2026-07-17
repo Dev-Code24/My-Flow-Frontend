@@ -1,9 +1,10 @@
 import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, SetStateAction, useRef, useState } from "react";
-import { Coordinates2D, Element, Interaction, ResizeHandle, Tool, WhiteboardAction, WhiteboardState } from "@/interfaces";
+import { Coordinates2D, Element, Interaction, ResizeHandle, Tool, WhiteboardAction, WhiteboardMode, WhiteboardState } from "@/interfaces";
 import { CORNER_HANDLES, CursorStyles } from "@/constants";
-import { constrainResizeToAspectRatio, getCanvasPoint, getCursorForHandle, getHandleAtPosition, getInitialDrawingDimensions, getResizeAnchor, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles } from "@/utils";
+import { constrainResizeToAspectRatio, getCanvasPoint, getCursorForHandle, getHandleAtPosition, getInitialDrawingDimensions, getResizeAnchor, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles, findTopmostElementAtPosition, hasCrossedDrawingThreshold } from "@/utils";
 
 interface UseWhiteboardInteractionsParams {
+	mode: WhiteboardMode;
 	canvasRef: RefObject<HTMLCanvasElement | null>;
 	elements: Element[];
 	interaction: Interaction;
@@ -33,6 +34,7 @@ interface PendingDrawing {
 const DRAWING_DRAG_THRESHOLD = 3;
 
 export function useWhiteboardInteractions({
+	mode,
 	canvasRef,
 	elements,
 	interaction,
@@ -51,6 +53,8 @@ export function useWhiteboardInteractions({
 	const lastMousePos = useRef<Coordinates2D>({ x: 0, y: 0 });
 	const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
 	const [resizeAnchor, setResizeAnchor] = useState<Coordinates2D | null>(null);
+
+	const isReadOnly = mode === "readonly";
 
 	function handleMouseDown(event: ReactMouseEvent<HTMLCanvasElement>): void {
 		if (event.button === 1) {
@@ -75,7 +79,7 @@ export function useWhiteboardInteractions({
 			return;
 		}
 
-		if (event.button !== 0) { return; }
+		if (event.button !== 0 || isReadOnly) { return; }
 
 		const newElementShape = getShapeFromTool(tool);
 
@@ -95,7 +99,7 @@ export function useWhiteboardInteractions({
 			return;
 		}
 
-		const clickedElement = findClickedElement(context, x, y);
+		const clickedElement = findTopmostElementAtPosition(elements, context, x, y);
 
 		if (clickedElement) {
 			if (!selectedIds.includes(clickedElement.id)) {
@@ -128,7 +132,7 @@ export function useWhiteboardInteractions({
 			const pending = pendingDrawing.current;
 			const dx = x - pending.x;
 			const dy = y - pending.y;
-			const hasCrossedDragThreshold = Math.abs(dx) >= DRAWING_DRAG_THRESHOLD || Math.abs(dy) >= DRAWING_DRAG_THRESHOLD;
+			const hasCrossedDragThreshold = hasCrossedDrawingThreshold(pending, { x, y }, DRAWING_DRAG_THRESHOLD);
 		
 			if (!hasStartedDrawing.current && hasCrossedDragThreshold) {
 				const dimensions = getInitialDrawingDimensions(dx, dy, isShiftPressed);
@@ -161,6 +165,11 @@ export function useWhiteboardInteractions({
 
 		if (interaction === Interaction.PANNING || isMiddleClickPanning) {
 			handlePanning(canvas, rawX, rawY);
+			return;
+		}
+
+		if (isReadOnly) {
+			canvas.style.cursor = isSpacePressed ? CursorStyles.GRAB : CursorStyles.DEFAULT;
 			return;
 		}
 
@@ -200,10 +209,14 @@ export function useWhiteboardInteractions({
 		const canvas = canvasRef.current;
 	
 		if (canvas) {
-			updateCursorAfterMouseUp(canvas, event);
+			if (isReadOnly) {
+				canvas.style.cursor = CursorStyles.DEFAULT;
+			} else {
+				updateCursorAfterMouseUp(canvas, event);
+			}
 		}
 	
-		if (completedDrawing || interaction !== Interaction.DRAWING) {
+		if (!isReadOnly && (completedDrawing || interaction !== Interaction.DRAWING)) {
 			dispatchWhiteBoardState({ type: "NORMALIZE_ELEMENTS" });
 		}
 	}
@@ -231,16 +244,6 @@ export function useWhiteboardInteractions({
 		canvas.style.cursor = getCursorForHandle(selected.angle, handle, true);
 
 		return true;
-	}
-
-	function findClickedElement(context: CanvasRenderingContext2D, x: number, y: number): Element | undefined {
-		for (let index = elements.length - 1; index >= 0; index--) {
-			if (isMouseOnElement(x, y, elements[index], context)) {
-				return elements[index];
-			}
-		}
-
-		return undefined;
 	}
 
 	function handlePanning(canvas: HTMLCanvasElement, rawX: number, rawY: number): void {

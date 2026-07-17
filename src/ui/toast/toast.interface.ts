@@ -1,4 +1,4 @@
-export type ToastVariant = "success" | "error" | "warning" | "info";
+export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastItem {
    id: number;
@@ -15,4 +15,4 @@ export interface ToastOptions {
    position?: ToastPosition;
 }
 
-export type ToastPosition = "top-left" | "top-center" | "top-right" | "bottom-left" | "bottom-center" | "bottom-right";
+export type ToastPosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';

@@ -24,7 +24,16 @@ export function useExportFlow(): UseExportFlowResult {
       setIsExporting(true);
 
       try {
-         const response = await shareFlow(document);
+         const payload = {
+            document: {
+              schemaVersion: 1,
+              canvas: {
+                elements: document.elements,
+              },
+            },
+          };
+          
+         const response = await shareFlow(payload);
          const { flowId } = response.data;
          const shareableUrl = `${window.location.origin}/share/${flowId}`;
 

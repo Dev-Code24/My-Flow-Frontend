@@ -1,4 +1,4 @@
-import Toast from "./Toast";
+import Toast from './Toast';
 
 export * from './toast.interface';
 export { toast } from './toast.service';

@@ -1,4 +1,4 @@
-import { ToastItem, ToastOptions, ToastPosition, ToastVariant } from "./toast.interface";
+import { ToastItem, ToastOptions, ToastPosition, ToastVariant } from './toast.interface';
 
 interface ToastTimer {
 	startedAt: number;
@@ -8,7 +8,7 @@ interface ToastTimer {
 
 type ToastListener = () => void;
 
-const DEFAULT_POSITION: ToastPosition = "top-center";
+const DEFAULT_POSITION: ToastPosition = 'top-center';
 const DEFAULT_DURATION = 5_000;
 const EXIT_ANIMATION_DURATION = 300;
 const MAX_TOASTS = 3;
@@ -130,7 +130,7 @@ function resume(id: number): void {
 function show(message: string, options: ToastOptions = {}): number {
 	const id = ++idCounter;
 	const duration = options.duration ?? DEFAULT_DURATION;
-	const variant = options.variant ?? "info";
+	const variant = options.variant ?? 'info';
 
 	const toast: ToastItem = {
 		id,
@@ -174,19 +174,19 @@ function showToast(variant: ToastVariant, message: string, duration?: number): n
 
 export const toast = {
 	success(message: string, duration?: number): number {
-		return showToast("success", message, duration);
+		return showToast('success', message, duration);
 	},
 
 	error(message: string, duration?: number): number {
-		return showToast("error", message, duration);
+		return showToast('error', message, duration);
 	},
 
 	warning(message: string, duration?: number): number {
-		return showToast("warning", message, duration);
+		return showToast('warning', message, duration);
 	},
 
 	info(message: string, duration?: number): number {
-		return showToast("info", message, duration);
+		return showToast('info', message, duration);
 	},
 
 	dismiss,

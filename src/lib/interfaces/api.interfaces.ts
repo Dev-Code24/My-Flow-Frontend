@@ -1,4 +1,4 @@
-export interface RequestOptions extends Omit<RequestInit, "body" | "signal"> {
+export interface RequestOptions extends Omit<RequestInit, 'body' | 'signal'> {
   body?: unknown;
   signal?: AbortSignal;
   timeout?: number;
