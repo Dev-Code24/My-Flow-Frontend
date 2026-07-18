@@ -12,9 +12,9 @@ import { useWhiteboardViewport, useWhiteboardInteractions, useKeyboardShortcuts,
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
 import { useParams, useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
-import { ConfirmDialog } from '@/ui/dialog';
 import { FlowDocumentData } from '@/lib/interfaces';
 import { saveWorkspace } from '@/lib/utils';
+import { ConfirmModal } from '@/ui/modal';
 
 export default function SharedFlowPage() {
 	const params = useParams<{ flowId: string; }>();
@@ -26,7 +26,7 @@ export default function SharedFlowPage() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [isShiftPressed, setIsShiftPressed] = useState<boolean>(false);
 	const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
-	const [isImportDialogOpen, setIsImportDialogOpen] = useState<boolean>(false);
+	const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
 	const { document, isLoading, error } = useSharedFlow(flowId);
 	const [whiteBoardState, dispatchWhiteBoardState] = useReducer<WhiteboardState, [action: WhiteboardAction]>(whiteboardReducer, initialWhiteBoardState);
 
@@ -106,7 +106,7 @@ export default function SharedFlowPage() {
 			zoom: 1,
 		});
 	
-		setIsImportDialogOpen(false);
+		setIsImportModalOpen(false);
 		router.push('/');
 	}
    
@@ -166,20 +166,20 @@ export default function SharedFlowPage() {
 				topRightAction={
 					<EditSharedFlowButton
 						onClick={() => {
-							setIsImportDialogOpen((prev) => !prev);
+							setIsImportModalOpen((prev) => !prev);
 						}}
 					/>
 				}
 			/>
 
-			<ConfirmDialog
-				open={isImportDialogOpen}
-				title='Replace your current workspace?'
-				message='Importing this shared flow will replace everything currently in your workspace. This action cannot be undone.'
-				confirmLabel='Import and replace'
-				cancelLabel='Cancel'
+			<ConfirmModal
+				isOpen={isImportModalOpen}
+				title="Replace your current workspace?"
+				message="Importing this shared flow will replace everything currently in your workspace. This action cannot be undone."
+				confirmLabel="Import and replace"
+				cancelLabel="Cancel"
 				isDestructive
-				onCancel={() => setIsImportDialogOpen(false)}
+				onCancel={() => setIsImportModalOpen(false)}
 				onConfirm={handleImportSharedFlow}
 			/>
 		</>
