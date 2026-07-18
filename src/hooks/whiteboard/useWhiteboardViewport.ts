@@ -58,6 +58,45 @@ export function useWhiteboardViewport({
 
 	const contentBounds = useMemo(() => getContentBounds(elements), [elements]);
 
+	const backToContent = useCallback((): void => {
+		if (elements.length === 0) { return; }
+	
+		const { minValues, maxValues } = contentBounds;
+	
+		const contentCenter: Coordinates2D = {
+			x: (minValues.x + maxValues.x) / 2,
+			y: (minValues.y + maxValues.y) / 2,
+		};
+	
+		setPan({
+			x: canvasSize.width / 2 - contentCenter.x * zoom,
+			y: canvasSize.height / 2 - contentCenter.y * zoom,
+		});
+	}, [elements.length, contentBounds, canvasSize, zoom]);
+
+	const showBackToContent = useMemo(() => {
+		if (elements.length === 0 || canvasSize.width === 0 || canvasSize.height === 0) {
+			return false;
+		}
+
+		const { minValues, maxValues } = contentBounds;
+
+		const viewportMin: Coordinates2D = {
+			x: -pan.x / zoom,
+			y: -pan.y / zoom,
+		};
+
+		const viewportMax: Coordinates2D = {
+			x: (-pan.x + canvasSize.width) / zoom,
+
+			y: (-pan.y + canvasSize.height) / zoom,
+		};
+
+		const isContentVisible = minValues.x < viewportMax.x && maxValues.x > viewportMin.x && minValues.y < viewportMax.y && maxValues.y > viewportMin.y;
+
+		return !isContentVisible;
+	}, [elements.length, canvasSize, contentBounds, pan, zoom]);
+
 	const zoomTo = useCallback(
 		(targetZoom: number, centerX: number, centerY: number): void => {
 			const clampedZoom = clampZoom(targetZoom);
@@ -91,12 +130,25 @@ export function useWhiteboardViewport({
 	}, [changeZoom]);
 
 	const resetZoom = useCallback((): void => {
-		if (zoom === 1) {
+		if (elements.length === 0) {
+			zoomTo(1, canvasSize.width / 2, canvasSize.height / 2);
 			return;
 		}
-
-		zoomTo(1, canvasSize.width / 2, canvasSize.height / 2);
-	}, [zoom, canvasSize, zoomTo]);
+	
+		const { minValues, maxValues } = contentBounds;
+	
+		const contentCenter: Coordinates2D = {
+			x: (minValues.x + maxValues.x) / 2,
+			y: (minValues.y + maxValues.y) / 2,
+		};
+	
+		setZoom(1);
+	
+		setPan({
+			x: canvasSize.width / 2 - contentCenter.x,
+			y: canvasSize.height / 2 - contentCenter.y,
+		});
+	}, [elements.length, contentBounds, canvasSize, zoomTo]);
 
 	const handleWheel = useCallback(
 		(event: React.WheelEvent<HTMLCanvasElement>): void => {
@@ -121,46 +173,6 @@ export function useWhiteboardViewport({
 		},
 		[canvasRef, zoom, zoomTo],
 	);
-
-	const backToContent = useCallback((): void => {
-		if (elements.length === 0) { return; }
-
-		const { minValues, maxValues } = contentBounds;
-		const contentCenter: Coordinates2D = {
-			x: (minValues.x + maxValues.x) / 2,
-			y: (minValues.y + maxValues.y) / 2,
-		};
-
-		setZoom(1);
-
-		setPan({
-			x: canvasSize.width / 2 - contentCenter.x,
-			y: canvasSize.height / 2 - contentCenter.y,
-		});
-	}, [elements.length, contentBounds, canvasSize]);
-
-	const showBackToContent = useMemo(() => {
-		if (elements.length === 0 || canvasSize.width === 0 || canvasSize.height === 0) {
-			return false;
-		}
-
-		const { minValues, maxValues } = contentBounds;
-
-		const viewportMin: Coordinates2D = {
-			x: -pan.x / zoom,
-			y: -pan.y / zoom,
-		};
-
-		const viewportMax: Coordinates2D = {
-			x: (-pan.x + canvasSize.width) / zoom,
-
-			y: (-pan.y + canvasSize.height) / zoom,
-		};
-
-		const isContentVisible = minValues.x < viewportMax.x && maxValues.x > viewportMin.x && minValues.y < viewportMax.y && maxValues.y > viewportMin.y;
-
-		return !isContentVisible;
-	}, [elements.length, canvasSize, contentBounds, pan, zoom]);
 
 	return {
 		pan,
