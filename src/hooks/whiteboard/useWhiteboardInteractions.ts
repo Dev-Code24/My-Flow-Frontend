@@ -1,7 +1,7 @@
-import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, SetStateAction, useRef, useState } from "react";
-import { Coordinates2D, Element, Interaction, ResizeHandle, Tool, WhiteboardAction, WhiteboardMode, WhiteboardState } from "@/interfaces";
-import { CORNER_HANDLES, CursorType } from "@/constants";
-import { constrainResizeToAspectRatio, getCanvasPoint, getCursorForHandle, getHandleAtPosition, getInitialDrawingDimensions, getResizeAnchor, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles, findTopmostElementAtPosition, hasCrossedDrawingThreshold, getCursorStyle } from "@/utils";
+import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, SetStateAction, useRef, useState } from 'react';
+import { Coordinates2D, Element, Interaction, ResizeHandle, Tool, WhiteboardAction, WhiteboardMode, WhiteboardState } from '@/interfaces';
+import { CORNER_HANDLES, CursorType } from '@/constants';
+import { constrainResizeToAspectRatio, getCanvasPoint, getCursorForHandle, getHandleAtPosition, getInitialDrawingDimensions, getResizeAnchor, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles, findTopmostElementAtPosition, hasCrossedDrawingThreshold, getCursorStyle } from '@/utils';
 
 interface UseWhiteboardInteractionsParams {
 	mode: WhiteboardMode;
@@ -9,14 +9,16 @@ interface UseWhiteboardInteractionsParams {
 	elements: Element[];
 	interaction: Interaction;
 	selectedIds: string[];
-	selectionBox: WhiteboardState["selectionBox"];
+	selectionBox: WhiteboardState['selectionBox'];
 	tool: Tool;
 	pan: Coordinates2D;
 	zoom: number;
 	isShiftPressed: boolean;
 	isSpacePressed: boolean;
 	setPan: Dispatch<SetStateAction<Coordinates2D>>;
+	documentRevision: number;
 	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
+	recordSnapshot: (snapshot: Element[]) => void;
 }
 
 interface UseWhiteboardInteractionsResult {
@@ -28,7 +30,7 @@ interface UseWhiteboardInteractionsResult {
 interface PendingDrawing {
 	x: number;
 	y: number;
-	shape: Element["shape"];
+	shape: Element['shape'];
 }
 
 const DRAWING_DRAG_THRESHOLD = 3;
@@ -47,14 +49,37 @@ export function useWhiteboardInteractions({
 	isSpacePressed,
 	setPan,
 	dispatchWhiteBoardState,
+	documentRevision,
+	recordSnapshot,
 }: UseWhiteboardInteractionsParams): UseWhiteboardInteractionsResult {
 	const pendingDrawing = useRef<PendingDrawing | null>(null);
 	const hasStartedDrawing = useRef<boolean>(false);
 	const lastMousePos = useRef<Coordinates2D>({ x: 0, y: 0 });
+	const interactionStartSnapshot = useRef<Element[] | null>(null);
+	const interactionStartRevision = useRef<number | null>(null);
+
 	const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
 	const [resizeAnchor, setResizeAnchor] = useState<Coordinates2D | null>(null);
 
-	const isReadOnly = mode === "readonly";
+	const isReadOnly = mode === 'readonly';
+
+	function beginDocumentChange(): void {
+		interactionStartSnapshot.current = structuredClone(elements);
+		interactionStartRevision.current = documentRevision;
+	}
+	
+	function commitDocumentChange(): void {
+		if (interactionStartSnapshot.current === null || interactionStartRevision.current === null) {
+			return;
+		}
+	
+		if (interactionStartRevision.current !== documentRevision) {
+			recordSnapshot(interactionStartSnapshot.current);
+		}
+	
+		interactionStartSnapshot.current = null;
+		interactionStartRevision.current = null;
+	}
 
 	function handleMouseDown(event: ReactMouseEvent<HTMLCanvasElement>): void {
 		if (event.button === 1) {
@@ -65,14 +90,14 @@ export function useWhiteboardInteractions({
 
 		if (!canvas) { return; }
 
-		const context = canvas.getContext("2d");
+		const context = canvas.getContext('2d');
 
 		if (!context) { return; }
 
 		const { x, y, rawX, rawY } = getCanvasPoint(event, canvas, pan, zoom);
 
 		if (isSpacePressed || event.button === 1 || tool === Tool.PAN) {
-			dispatchWhiteBoardState({ type: "SET_INTERACTION", interaction: Interaction.PANNING });
+			dispatchWhiteBoardState({ type: 'SET_INTERACTION', interaction: Interaction.PANNING });
 			lastMousePos.current = { x: rawX, y: rawY };
 			canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
 
@@ -103,16 +128,18 @@ export function useWhiteboardInteractions({
 
 		if (clickedElement) {
 			if (!selectedIds.includes(clickedElement.id)) {
-				dispatchWhiteBoardState({ type: "SELECT_ELEMENT", id: clickedElement.id });
+				dispatchWhiteBoardState({ type: 'SELECT_ELEMENT', id: clickedElement.id });
 			}
-			dispatchWhiteBoardState({ type: "SET_INTERACTION", interaction: Interaction.MOVING });
+
+			beginDocumentChange();
+			dispatchWhiteBoardState({ type: 'SET_INTERACTION', interaction: Interaction.MOVING });
 			lastMousePos.current = { x: rawX, y: rawY };
 			canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
 
 			return;
 		}
 
-		dispatchWhiteBoardState({ type: "START_SELECTION", x, y });
+		dispatchWhiteBoardState({ type: 'START_SELECTION', x, y });
 	}
 
 	function handleMouseMove(event: ReactMouseEvent<HTMLCanvasElement>): void {
@@ -120,7 +147,7 @@ export function useWhiteboardInteractions({
 
 		if (!canvas) { return; }
 
-		const context = canvas.getContext("2d");
+		const context = canvas.getContext('2d');
 
 		if (!context) { return; }
 
@@ -135,6 +162,7 @@ export function useWhiteboardInteractions({
 			const hasCrossedDragThreshold = hasCrossedDrawingThreshold(pending, { x, y }, DRAWING_DRAG_THRESHOLD);
 		
 			if (!hasStartedDrawing.current && hasCrossedDragThreshold) {
+				beginDocumentChange();
 				const dimensions = getInitialDrawingDimensions(dx, dy, isShiftPressed);
 		
 				const newElement: Element = {
@@ -149,9 +177,8 @@ export function useWhiteboardInteractions({
 				};
 		
 				hasStartedDrawing.current = true;
-		
 				dispatchWhiteBoardState({
-					type: "START_DRAW",
+					type: 'START_DRAW',
 					element: newElement,
 				});
 		
@@ -176,7 +203,7 @@ export function useWhiteboardInteractions({
 		updateCursor(canvas, context, x, y);
 
 		if (interaction === Interaction.SELECTING && selectionBox) {
-			dispatchWhiteBoardState({ type: "UPDATE_SELECTION", x, y });
+			dispatchWhiteBoardState({ type: 'UPDATE_SELECTION', x, y });
 			return;
 		}
 
@@ -205,7 +232,7 @@ export function useWhiteboardInteractions({
 		setActiveHandle(null);
 		setResizeAnchor(null);
 	
-		dispatchWhiteBoardState({ type: "END_INTERACTION" });
+		dispatchWhiteBoardState({ type: 'END_INTERACTION' });
 	
 		const canvas = canvasRef.current;
 	
@@ -220,8 +247,10 @@ export function useWhiteboardInteractions({
 		}
 	
 		if (!isReadOnly && (completedDrawing || interaction !== Interaction.DRAWING)) {
-			dispatchWhiteBoardState({ type: "NORMALIZE_ELEMENTS" });
+			dispatchWhiteBoardState({ type: 'NORMALIZE_ELEMENTS' });
 		}
+
+		commitDocumentChange();
 	}
 
 	function tryStartResize(canvas: HTMLCanvasElement, x: number, y: number): boolean {
@@ -237,12 +266,14 @@ export function useWhiteboardInteractions({
 
 		if (!handle) { return false; }
 
+		beginDocumentChange();
+
 		const anchor = getResizeAnchor(selected, handle);
 
 		if (anchor) { setResizeAnchor(anchor); }
 
 		setActiveHandle(handle);
-		dispatchWhiteBoardState({ type: "SET_INTERACTION", interaction: Interaction.RESIZING });
+		dispatchWhiteBoardState({ type: 'SET_INTERACTION', interaction: Interaction.RESIZING });
 
 		canvas.style.cursor = getCursorForHandle(selected.angle, handle);
 
@@ -264,13 +295,13 @@ export function useWhiteboardInteractions({
 		const dx = (rawX - lastMousePos.current.x) / zoom;
 		const dy = (rawY - lastMousePos.current.y) / zoom;
 
-		dispatchWhiteBoardState({ type: "MOVE_SELECTED", dx, dy });
+		dispatchWhiteBoardState({ type: 'MOVE_SELECTED', dx, dy });
 		lastMousePos.current = { x: rawX, y: rawY };
 	}
 
 	function handleDrawing(x: number, y: number): void {
 		dispatchWhiteBoardState({
-			type: "SET_ELEMENTS",
+			type: 'SET_ELEMENTS',
 			updater: (currentElements) =>
 				currentElements.map((element) => {
 					if (element.id !== selectedIds[0]) {
@@ -306,7 +337,7 @@ export function useWhiteboardInteractions({
 		}
 
 		dispatchWhiteBoardState({
-			type: "SET_ELEMENTS",
+			type: 'SET_ELEMENTS',
 			updater: (currentElements) =>
 				currentElements.map((element) => {
 					if (element.id !== selectedIds[0]) {
@@ -361,7 +392,7 @@ export function useWhiteboardInteractions({
 	}
 
 	function updateCursorAfterMouseUp(canvas: HTMLCanvasElement, event: ReactMouseEvent<HTMLCanvasElement>): void {
-		const context = canvas.getContext("2d");
+		const context = canvas.getContext('2d');
 
 		const { x, y } = getCanvasPoint(event, canvas, pan, zoom);
 

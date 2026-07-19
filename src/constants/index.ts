@@ -7,7 +7,10 @@ export enum KeyboardKeys {
    R = 'r',
    D = 'd',
    BACKSPACE = 'backspace',
-   SPACEBAR = ' '
+   DELETE = 'delete',
+   SPACEBAR = ' ',
+   Z = 'z',
+   Y = 'y',
 };
 
 export const MIN_SHAPE_SIZE = 18;
@@ -39,4 +42,5 @@ export const initialWhiteBoardState: WhiteboardState = {
    selectionBox: null,
    interaction: Interaction.IDLE,
    tool: Tool.SELECT,
+   documentRevision: 0,
 };

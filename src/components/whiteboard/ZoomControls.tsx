@@ -13,7 +13,7 @@ interface ZoomControlsProps {
  }: ZoomControlsProps) {
    return (
      <div
-       className='absolute bottom-6 left-6 z-20 flex items-center rounded-lg border border-border bg-white px-1 py-1 text-sm font-medium text-tool-default shadow-md'
+       className='flex items-center rounded-lg border border-border bg-white px-1 py-1 text-sm font-medium text-tool-default shadow-md'
      >
        <button
          type='button'
