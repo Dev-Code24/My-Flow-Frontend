@@ -116,10 +116,10 @@ export default function SharedFlowPage() {
             <div className='flex flex-col items-center gap-3'>
                <LoaderCircle
                   size={32}
-                  className='animate-spin text-[#665CE8]'
+                  className='animate-spin text-primary'
                />
    
-               <p className='text-sm text-[#5F5D68]'>
+               <p className='text-sm text-text-secondary'>
                   Loading shared flow
                </p>
             </div>
@@ -131,11 +131,11 @@ export default function SharedFlowPage() {
 		return (
 			<div className='fixed inset-0 flex items-center justify-center bg-white'>
 				<div className='text-center'>
-					<h1 className='text-xl font-semibold text-[#2F2D38]'>
+					<h1 className='text-xl font-semibold text-text-primary'>
 						Unable to load this flow
 					</h1>
 
-					<p className='mt-2 text-sm text-[#6B6875]'>
+					<p className='mt-2 text-sm text-text-secondary'>
                   This shared flow is unavailable.
 					</p>
 				</div>

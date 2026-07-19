@@ -1,4 +1,4 @@
-import { Interaction, Shape, Tool, WhiteboardState } from '@/interfaces';
+import { Interaction, Tool, WhiteboardState } from '@/interfaces';
 
 export enum KeyboardKeys {
    SHIFT = 'shift',
@@ -14,16 +14,20 @@ export const MIN_SHAPE_SIZE = 18;
 
 export const CORNER_HANDLES = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
 
-export enum CursorStyles { 
-   DEFAULT = 'default',
-   GRAB = 'grab',
-   GRABBING = 'grabbing',
-   EW_RESIZE = 'ew-resize',
-   NWSE_RESIZE = 'nwse-resize',
-   NS_RESIZE = 'ns-resize',
-   NESW_RESIZE = 'nesw-resize',
-   CROSSHAIR = 'crosshair'
-};
+export enum CursorType {
+   POINTER = 'pointer',
+	TEXT = 'text',
+	NOT_ALLOWED = 'not-allowed',
+	DEFAULT = 'default',
+	ROTATE = 'rotate',
+	GRAB = 'grab',
+	GRABBING = 'grabbing',
+	EW_RESIZE = 'ew-resize',
+	NWSE_RESIZE = 'nwse-resize',
+	NS_RESIZE = 'ns-resize',
+	NESW_RESIZE = 'nesw-resize',
+	CROSSHAIR = 'crosshair',
+}
 
 export const initialWhiteBoardState: WhiteboardState = {
    elements: [

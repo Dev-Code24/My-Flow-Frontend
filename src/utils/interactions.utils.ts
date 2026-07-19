@@ -1,5 +1,6 @@
 import { Coordinates2D, Element, ResizeHandle } from '@/interfaces';
 import { isMouseOnElement } from '.';
+import { CursorType } from '@/constants';
 
 export function getMouseXY(e: React.MouseEvent, rect: DOMRect): { mouseX: number; mouseY: number } {
 	return { mouseX: e.clientX - rect.left, mouseY: e.clientY - rect.top };
@@ -93,4 +94,78 @@ export function hasCrossedDrawingThreshold(start: Coordinates2D, current: Coordi
 	const dy = current.y - start.y;
 
 	return Math.hypot(dx, dy) >= threshold;
+}
+
+// export function getCursorStyle(type: CursorType): string {
+// 	switch (type) {
+// 		case CursorType.DEFAULT:
+// 			return `url('/cursors/cursor.svg') 4 2, default`;
+
+// 		case CursorType.ROTATE:
+// 			return `url('/cursors/rotate-cursor.svg') 12 12, default`;
+
+// 		case CursorType.GRAB:
+// 			return `url('/cursors/grab-cursor.svg') 12 12, grab`;
+
+// 		case CursorType.GRABBING:
+// 			return `url('/cursors/grabbing-cursor.svg') 12 12, grabbing`;
+
+// 		case CursorType.EW_RESIZE:
+// 			return `url('/cursors/ew-resize-cursor.svg') 12 12, ew-resize`;
+
+// 		case CursorType.NWSE_RESIZE:
+// 			return `url('/cursors/nwse-resize-cursor.svg') 12 12, nwse-resize`;
+
+// 		case CursorType.NS_RESIZE:
+// 			return `url('/cursors/ns-resize-cursor.svg') 12 12, ns-resize`;
+
+// 		case CursorType.NESW_RESIZE:
+// 			return `url('/cursors/nesw-resize-cursor.svg') 12 12, nesw-resize`;
+
+// 		case CursorType.CROSSHAIR:
+// 			return `url('/cursors/crosshair-cursor.svg') 12 12, crosshair`;
+
+// 		default:
+// 			return `url('/cursors/cursor.svg') 4 2, default`;
+// 	}
+// }
+
+export function getCursorStyle(type: CursorType): string {
+	switch (type) {
+		case CursorType.DEFAULT:
+			return `url('/cursors/cursor.svg') 4 2, default`;
+
+		case CursorType.POINTER:
+			return `url('/cursors/pointer-cursor.svg') 6 2, pointer`;
+
+		case CursorType.TEXT:
+			return `url('/cursors/text-cursor.svg') 12 12, text`;
+
+		case CursorType.NOT_ALLOWED:
+			return `url('/cursors/not-allowed-cursor.svg') 12 12, not-allowed`;
+
+		case CursorType.ROTATE:
+			return `url('/cursors/rotate-cursor.svg') 12 12, default`;
+
+		case CursorType.GRAB:
+			return `url('/cursors/grab-cursor.svg') 12 12, grab`;
+
+		case CursorType.GRABBING:
+			return `url('/cursors/grabbing-cursor.svg') 12 12, grabbing`;
+
+		case CursorType.EW_RESIZE:
+			return `url('/cursors/ew-resize-cursor.svg') 12 12, ew-resize`;
+
+		case CursorType.NWSE_RESIZE:
+			return `url('/cursors/nwse-resize-cursor.svg') 12 12, nwse-resize`;
+
+		case CursorType.NS_RESIZE:
+			return `url('/cursors/ns-resize-cursor.svg') 12 12, ns-resize`;
+
+		case CursorType.NESW_RESIZE:
+			return `url('/cursors/nesw-resize-cursor.svg') 12 12, nesw-resize`;
+
+		case CursorType.CROSSHAIR:
+			return `url('/cursors/crosshair-cursor.svg') 12 12, crosshair`;
+	}
 }

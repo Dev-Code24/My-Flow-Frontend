@@ -51,7 +51,7 @@ export default function ShareModal({
       <button
         type='button'
         onClick={() => setIsOpen(true)}
-        className='absolute right-6 top-6 z-20 flex h-10 items-center gap-2 rounded-lg bg-[#665CE8] px-4 text-sm font-semibold text-white shadow-md transition-colors hover:bg-[#574DDA] cursor-pointer'
+        className='absolute right-6 top-6 z-20 flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-md transition-colors hover:bg-primary-hover'
       >
         <Share2 size={18} strokeWidth={2} />
         Share
@@ -64,15 +64,15 @@ export default function ShareModal({
         contentClassName='px-10 py-10 sm:px-12'
       >
         <section className='text-center'>
-          <h2 className='text-xl font-bold text-[#665CE8]'>
+          <h2 className='text-xl font-bold text-primary'>
             Live collaboration
           </h2>
 
-          <p className='mt-6 text-sm text-[#2F2D38]'>
+          <p className='mt-6 text-sm text-text-primary'>
             Invite people to collaborate on your drawing.
           </p>
 
-          <p className='mx-auto mt-4 max-w-115 text-sm leading-6 text-[#2F2D38]'>
+          <p className='mx-auto mt-4 max-w-115 text-sm leading-6 text-text-primary'>
             Don&apos;t worry, the session is end-to-end encrypted and fully
             private. Not even our server can see what you draw.
           </p>
@@ -81,7 +81,7 @@ export default function ShareModal({
             type='button'
             onClick={handleStartSession}
             disabled={isLoading}
-            className='mx-auto mt-6 flex min-h-12 items-center justify-center gap-3 rounded-lg bg-[#665CE8] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#574DDA] disabled:cursor-not-allowed disabled:opacity-60'
+            className='mx-auto mt-6 flex min-h-12 items-center justify-center gap-3 rounded-lg bg-primary px-7 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60'
           >
             {isStartingSession ? (
               <LoaderCircle
@@ -93,26 +93,26 @@ export default function ShareModal({
               <Play size={18} aria-hidden />
             )}
 
-            {isStartingSession ? 'Starting...' : 'Start session'}
+            {isStartingSession ? 'Starting' : 'Start session'}
           </button>
         </section>
 
         <div className='my-9 flex items-center gap-4'>
-          <div className='h-px flex-1 bg-[#E7E5EC]' />
+          <div className='h-px flex-1 bg-border' />
 
-          <span className='text-sm text-[#2F2D38]'>
+          <span className='text-sm text-text-primary'>
             Or
           </span>
 
-          <div className='h-px flex-1 bg-[#E7E5EC]' />
+          <div className='h-px flex-1 bg-border' />
         </div>
 
         <section className='text-center'>
-          <h3 className='text-xl font-bold text-[#665CE8]'>
+          <h3 className='text-xl font-bold text-primary'>
             Shareable link
           </h3>
 
-          <p className='mt-6 text-sm text-[#2F2D38]'>
+          <p className='mt-6 text-sm text-text-primary'>
             Export as a read-only link.
           </p>
 
@@ -120,7 +120,7 @@ export default function ShareModal({
             type='button'
             onClick={handleExportToLink}
             disabled={isLoading}
-            className='mx-auto mt-6 flex min-h-12 items-center justify-center gap-3 rounded-lg bg-[#665CE8] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#574DDA] disabled:cursor-not-allowed disabled:opacity-60'
+            className='mx-auto mt-6 flex min-h-12 items-center justify-center gap-3 rounded-lg bg-primary px-7 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60'
           >
             {isExporting ? (
               <LoaderCircle
@@ -132,7 +132,7 @@ export default function ShareModal({
               <Link2 size={18} aria-hidden />
             )}
 
-            {isExporting ? 'Exporting...' : 'Export to Link'}
+            {isExporting ? 'Exporting' : 'Export to Link'}
           </button>
         </section>
       </Modal>

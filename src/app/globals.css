@@ -3,7 +3,69 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --cursor-default: url('/cursors/cursor.svg') 4 2, default;
+  --cursor-pointer: url('/cursors/pointer-cursor.svg') 6 2, pointer;
+  --cursor-text: url('/cursors/text-cursor.svg') 12 12, text;
+  --cursor-not-allowed: url('/cursors/not-allowed-cursor.svg') 12 12, not-allowed;
   font-family: var(--font-fira-sans), sans-serif;
+}
+
+@theme {
+  --color-cursor-primary: #8B7CF0;
+  
+	/* Brand */
+	--color-primary: #665CE8;
+	--color-primary-hover: #574DDA;
+
+	/* Text */
+	--color-text-primary: #2F2D38;
+	--color-text-secondary: #6B6875;
+	--color-text-muted: #B6B6C0;
+
+	/* Surfaces */
+	--color-surface: #FFFFFF;
+	--color-surface-muted: #F4F4F7;
+	--color-surface-selected: #ECE9FE;
+
+	/* Borders */
+	--color-border: #E7E5EC;
+
+	/* Tools */
+	--color-tool-primary: #6246EA;
+  --color-tool-primary-hover: #5238CC;
+	--color-tool-default: #3F3F49;
+
+	/* Status */
+	--color-success: #16A34A;
+	--color-warning: #D97706;
+	--color-error: #DC2626;
+	--color-error-hover: #B91C1C;
+	--color-info: #2563EB;
+
+	/* Shadows */
+	--shadow-tool: 0 8px 24px -8px rgba(98, 70, 234, 0.5);
+}
+
+html,
+body {
+	cursor: var(--cursor-default);
+}
+
+button:not(:disabled),
+a,
+[role="button"] {
+	cursor: var(--cursor-pointer);
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+	cursor: var(--cursor-text);
+}
+
+button:disabled,
+[aria-disabled="true"] {
+	cursor: var(--cursor-not-allowed);
 }
 
 @layer base {

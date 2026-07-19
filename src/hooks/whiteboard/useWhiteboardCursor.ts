@@ -1,7 +1,8 @@
 import { RefObject, useEffect } from "react";
 
 import { Tool, WhiteboardMode } from "@/interfaces";
-import { CursorStyles } from "@/constants";
+import { CursorType } from "@/constants";
+import { getCursorStyle } from "@/utils";
 
 interface UseWhiteboardCursorParams {
 	canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -22,21 +23,21 @@ export function useWhiteboardCursor({
 		if (!canvas) { return; }
 
 		if (isSpacePressed) {
-			canvas.style.cursor = CursorStyles.GRAB;
+			canvas.style.cursor = getCursorStyle(CursorType.GRAB);
 			return;
 		}
 
 		if (mode === "readonly") {
-			canvas.style.cursor = CursorStyles.DEFAULT;
+			canvas.style.cursor = getCursorStyle(CursorType.DEFAULT);
 			return;
 		}
 
 		if (tool === Tool.PAN) {
-			canvas.style.cursor = CursorStyles.GRAB;
+			canvas.style.cursor = getCursorStyle(CursorType.GRAB);
 		} else if (tool === Tool.SELECT) {
-			canvas.style.cursor = CursorStyles.DEFAULT;
+			canvas.style.cursor = getCursorStyle(CursorType.DEFAULT);
 		} else {
-			canvas.style.cursor = CursorStyles.CROSSHAIR;
+			canvas.style.cursor = getCursorStyle(CursorType.CROSSHAIR);
 		}
 	}, [ canvasRef, tool, mode, isSpacePressed ]);
 }

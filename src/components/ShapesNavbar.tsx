@@ -65,7 +65,7 @@ export default function ShapesNavbar({ tool, dispatchWhiteBoardState, setIsSpace
 }
 
 function Divider() {
-  return <span aria-hidden className='w-px h-6.5 mx-1.75 bg-[#E7E5EC] shrink-0' />;
+  return <span aria-hidden className='w-px h-6.5 mx-1.75 bg-border shrink-0' />;
 }
 
 function ToolButton({ active, onClick, label, shortcut, Icon }: {
@@ -82,11 +82,11 @@ function ToolButton({ active, onClick, label, shortcut, Icon }: {
       aria-label={label}
       aria-pressed={active}
       title={label}
-      className={`cursor-pointer group relative w-11.5 h-11.5 rounded-[13px] inline-flex items-center justify-center transition-colors duration-150 ${active ? 'bg-[#ECE9FE] text-[#6246EA]' : 'text-[#3F3F49] hover:bg-[#F4F4F7]'}`}
+      className={`group relative w-11.5 h-11.5 rounded-[13px] inline-flex items-center justify-center transition-colors duration-150 ${active ? 'bg-surface-selected text-tool-primary' : 'text-tool-default hover:bg-surface-muted'}`}
     >
       <Icon size={21} />
       {shortcut && (
-        <span aria-hidden className={`absolute right-1.75 bottom-1.5 text-[11px] leading-none font-medium ${active ? 'text-[#6246EA]/55' : 'text-[#B6B6C0]'}`}>
+        <span aria-hidden className={`absolute right-1.75 bottom-1.5 text-[11px] leading-none font-medium ${active ? 'text-tool-primary/55' : 'text-text-muted'}`}>
           {shortcut}
         </span>
       )}

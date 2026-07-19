@@ -1,7 +1,7 @@
 import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, SetStateAction, useRef, useState } from "react";
 import { Coordinates2D, Element, Interaction, ResizeHandle, Tool, WhiteboardAction, WhiteboardMode, WhiteboardState } from "@/interfaces";
-import { CORNER_HANDLES, CursorStyles } from "@/constants";
-import { constrainResizeToAspectRatio, getCanvasPoint, getCursorForHandle, getHandleAtPosition, getInitialDrawingDimensions, getResizeAnchor, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles, findTopmostElementAtPosition, hasCrossedDrawingThreshold } from "@/utils";
+import { CORNER_HANDLES, CursorType } from "@/constants";
+import { constrainResizeToAspectRatio, getCanvasPoint, getCursorForHandle, getHandleAtPosition, getInitialDrawingDimensions, getResizeAnchor, getShapeFromTool, isDrawingTool, isMouseOnElement, updateElementPropertiesUsingHandles, findTopmostElementAtPosition, hasCrossedDrawingThreshold, getCursorStyle } from "@/utils";
 
 interface UseWhiteboardInteractionsParams {
 	mode: WhiteboardMode;
@@ -74,7 +74,7 @@ export function useWhiteboardInteractions({
 		if (isSpacePressed || event.button === 1 || tool === Tool.PAN) {
 			dispatchWhiteBoardState({ type: "SET_INTERACTION", interaction: Interaction.PANNING });
 			lastMousePos.current = { x: rawX, y: rawY };
-			canvas.style.cursor = CursorStyles.GRABBING;
+			canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
 
 			return;
 		}
@@ -107,7 +107,7 @@ export function useWhiteboardInteractions({
 			}
 			dispatchWhiteBoardState({ type: "SET_INTERACTION", interaction: Interaction.MOVING });
 			lastMousePos.current = { x: rawX, y: rawY };
-			canvas.style.cursor = CursorStyles.GRABBING;
+			canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
 
 			return;
 		}
@@ -169,7 +169,7 @@ export function useWhiteboardInteractions({
 		}
 
 		if (isReadOnly) {
-			canvas.style.cursor = isSpacePressed ? CursorStyles.GRAB : CursorStyles.DEFAULT;
+			canvas.style.cursor = getCursorStyle(isSpacePressed ? CursorType.GRAB : CursorType.DEFAULT);
 			return;
 		}
 
@@ -197,6 +197,7 @@ export function useWhiteboardInteractions({
 
 	function handleMouseUp(event: ReactMouseEvent<HTMLCanvasElement>): void {
 		const completedDrawing = hasStartedDrawing.current;
+		const completedInteraction = interaction;
 	
 		pendingDrawing.current = null;
 		hasStartedDrawing.current = false;
@@ -210,7 +211,9 @@ export function useWhiteboardInteractions({
 	
 		if (canvas) {
 			if (isReadOnly) {
-				canvas.style.cursor = CursorStyles.DEFAULT;
+				canvas.style.cursor = getCursorStyle(CursorType.DEFAULT);
+			} else if (completedInteraction === Interaction.MOVING) {
+				canvas.style.cursor = getCursorStyle(CursorType.GRAB);
 			} else {
 				updateCursorAfterMouseUp(canvas, event);
 			}
@@ -241,13 +244,13 @@ export function useWhiteboardInteractions({
 		setActiveHandle(handle);
 		dispatchWhiteBoardState({ type: "SET_INTERACTION", interaction: Interaction.RESIZING });
 
-		canvas.style.cursor = getCursorForHandle(selected.angle, handle, true);
+		canvas.style.cursor = getCursorForHandle(selected.angle, handle);
 
 		return true;
 	}
 
 	function handlePanning(canvas: HTMLCanvasElement, rawX: number, rawY: number): void {
-		canvas.style.cursor = CursorStyles.GRABBING;
+		canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
 
 		const dx = rawX - lastMousePos.current.x;
 		const dy = rawY - lastMousePos.current.y;
@@ -338,22 +341,22 @@ export function useWhiteboardInteractions({
 		const selectedElement = selectedIds.length === 1 ? elements.find((element) => element.id === selectedIds[0]) : undefined;
 
 		if (interaction === Interaction.MOVING) {
-			canvas.style.cursor = CursorStyles.GRABBING;
+			canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
 			return;
 		}
 
 		if (visibleHandle && selectedElement) {
-			canvas.style.cursor = getCursorForHandle(selectedElement.angle, visibleHandle, activeHandle !== null);
+			canvas.style.cursor = getCursorForHandle(selectedElement.angle, visibleHandle);
 			return;
 		}
 
 		if (isSpacePressed || tool === Tool.PAN || (isHoveringShape && tool === Tool.SELECT)) {
-			canvas.style.cursor = CursorStyles.GRAB;
+			canvas.style.cursor = getCursorStyle(CursorType.GRAB);
 			return;
 		}
 
 		if (!isSpacePressed) {
-			canvas.style.cursor = tool === Tool.SELECT ? CursorStyles.DEFAULT : CursorStyles.CROSSHAIR;
+			canvas.style.cursor = getCursorStyle(tool === Tool.SELECT ? CursorType.DEFAULT : CursorType.CROSSHAIR);
 		}
 	}
 
@@ -362,7 +365,7 @@ export function useWhiteboardInteractions({
 
 		const { x, y } = getCanvasPoint(event, canvas, pan, zoom);
 
-		let nextCursor = tool === Tool.SELECT ? CursorStyles.DEFAULT : CursorStyles.CROSSHAIR;
+		let nextCursor = getCursorStyle(tool === Tool.SELECT ? CursorType.DEFAULT : CursorType.CROSSHAIR);
 
 		if (tool === Tool.SELECT && selectedIds.length === 1 && context) {
 			const selected = elements.find((element) => element.id === selectedIds[0]);
@@ -371,9 +374,9 @@ export function useWhiteboardInteractions({
 				const hoveredHandle = getHandleAtPosition(x, y, selected);
 
 				if (hoveredHandle) {
-					nextCursor = getCursorForHandle(selected.angle, hoveredHandle, false);
+					nextCursor = getCursorForHandle(selected.angle, hoveredHandle);
 				} else if (isMouseOnElement(x, y, selected, context)) {
-					nextCursor = CursorStyles.GRAB;
+					nextCursor = CursorType.GRAB;
 				}
 			}
 		}

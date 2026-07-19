@@ -33,11 +33,11 @@ export default function ConfirmModal({
       width='520px'
     >
       <div>
-        <h2 className='text-lg font-semibold text-[#2F2D38]'>
+        <h2 className='text-lg font-semibold text-text-primary'>
           {title}
         </h2>
 
-        <p className='mt-3 text-sm leading-6 text-[#5F5D68]'>
+        <p className='mt-3 text-sm leading-6 text-text-secondary'>
           {message}
         </p>
 
@@ -46,7 +46,7 @@ export default function ConfirmModal({
             type='button'
             onClick={onCancel}
             disabled={isConfirming}
-            className='cursor-pointer rounded-lg border border-[#E7E5EC] px-4 py-2 text-sm font-medium text-[#3F3F49] transition-colors hover:bg-[#F4F4F7] disabled:cursor-not-allowed disabled:opacity-60'
+            className='rounded-lg border border-border px-4 py-2 text-sm font-medium text-tool-default transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60'
           >
             {cancelLabel}
           </button>
@@ -55,7 +55,7 @@ export default function ConfirmModal({
             type='button'
             onClick={onConfirm}
             disabled={isConfirming}
-            className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-[#665CE8] hover:bg-[#574DDA]'}`}
+            className={`flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${isDestructive ? 'bg-error hover:bg-error-hover' : 'bg-primary hover:bg-primary-hover'}`}
           >
             {isConfirming && (
               <LoaderCircle

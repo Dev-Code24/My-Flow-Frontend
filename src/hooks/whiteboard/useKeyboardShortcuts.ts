@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { Tool } from "@/interfaces";
-import { CursorStyles, KeyboardKeys } from "@/constants";
+import { CursorType, KeyboardKeys } from "@/constants";
 import { UseKeyboardShortcutsProps } from "@/interfaces/hooks-props.interfaces";
+import { getCursorStyle } from "@/utils";
 
 export function useKeyboardShortcuts({ mode, canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed }: UseKeyboardShortcutsProps): void {
 	const isReadOnly = mode === "readonly";
@@ -25,7 +26,7 @@ export function useKeyboardShortcuts({ mode, canvasRef, dispatchWhiteBoardState,
 
 				event.preventDefault();
 				setIsSpacePressed(true);
-				canvas.style.cursor = CursorStyles.GRAB;
+				canvas.style.cursor = getCursorStyle(CursorType.GRAB);
 				return;
 			}
 

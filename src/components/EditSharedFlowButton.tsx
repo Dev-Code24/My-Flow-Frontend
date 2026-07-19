@@ -13,7 +13,7 @@ export default function EditSharedFlowButton({
 		<button
 			type='button'
 			onClick={onClick}
-			className='absolute right-6 top-6 z-20 flex h-10 items-center gap-2 rounded-lg bg-[#665CE8] px-4 text-sm font-semibold text-white shadow-md transition-colors hover:bg-[#574DDA] cursor-pointer'
+			className='absolute right-6 top-6 z-20 flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-md transition-colors hover:bg-primary-hover'
 		>
 			<Pencil
 				size={18}
