@@ -1,18 +1,38 @@
-import { useEffect } from "react";
-import { Tool } from "@/interfaces";
-import { CursorType, KeyboardKeys } from "@/constants";
-import { UseKeyboardShortcutsProps } from "@/interfaces/hooks-props.interfaces";
-import { getCursorStyle } from "@/utils";
+import { Dispatch, RefObject, SetStateAction, useEffect } from 'react';
+import { Element, Tool, WhiteboardAction, WhiteboardMode } from '@/interfaces';
+import { CursorType, KeyboardKeys } from '@/constants';
+import { getCursorStyle } from '@/utils';
 
-export function useKeyboardShortcuts({ mode, canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed }: UseKeyboardShortcutsProps): void {
-	const isReadOnly = mode === "readonly";
-	
+interface UseKeyboardShortcutsProps {
+	canvasRef: RefObject<HTMLCanvasElement | null>;
+	elements: Element[];
+	selectedIds: string[];
+	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
+	setIsSpacePressed: Dispatch<SetStateAction<boolean>>;
+	setIsShiftPressed: Dispatch<SetStateAction<boolean>>;
+	mode: WhiteboardMode;
+	recordSnapshot: (snapshot: Element[]) => void;
+	undo: () => void;
+	redo: () => void;
+}
+
+export function useKeyboardShortcuts({
+	mode,
+	canvasRef,
+	elements,
+	selectedIds,
+	dispatchWhiteBoardState,
+	setIsSpacePressed,
+	setIsShiftPressed,
+	recordSnapshot,
+	redo,
+	undo,
+}: UseKeyboardShortcutsProps): void {
+	const isReadOnly = mode === 'readonly';
+
 	useEffect(() => {
 		const changeTool = (tool: Tool) => {
-			dispatchWhiteBoardState({
-				type: "CHANGE_TOOL",
-				tool,
-			});
+			dispatchWhiteBoardState({ type: 'CHANGE_TOOL', tool });
 		};
 
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -22,21 +42,48 @@ export function useKeyboardShortcuts({ mode, canvasRef, dispatchWhiteBoardState,
 
 			if (event.key === KeyboardKeys.SPACEBAR) {
 				const canvas = canvasRef.current;
+
 				if (!canvas) { return; }
 
 				event.preventDefault();
 				setIsSpacePressed(true);
 				canvas.style.cursor = getCursorStyle(CursorType.GRAB);
+
 				return;
 			}
 
-			if (isReadOnly) {
-				return; 
+			if (isReadOnly) { return; }
+
+			const isModifierPressed = event.ctrlKey || event.metaKey;
+
+			if (isModifierPressed && key === KeyboardKeys.Z) {
+				event.preventDefault();
+
+				if (event.shiftKey) {
+					redo();
+				} else {
+					undo();
+				}
+
+				return;
+			}
+
+			if (event.ctrlKey && key === KeyboardKeys.Y) {
+				event.preventDefault();
+				redo();
+
+				return;
 			}
 
 			switch (key) {
+				case KeyboardKeys.DELETE: 
 				case KeyboardKeys.BACKSPACE: {
-					dispatchWhiteBoardState({ type: "DELETE_SELECTED" });
+					if (selectedIds.length === 0) { return; }
+
+					event.preventDefault();
+					recordSnapshot(elements);
+					dispatchWhiteBoardState({ type: 'DELETE_SELECTED' });
+
 					return;
 				}
 
@@ -47,16 +94,19 @@ export function useKeyboardShortcuts({ mode, canvasRef, dispatchWhiteBoardState,
 
 				case KeyboardKeys.D: {
 					changeTool(Tool.DRAW_RECTANGLE);
+
 					return;
 				}
 
 				case KeyboardKeys.R: {
 					changeTool(Tool.DRAW_RHOMBUS);
+
 					return;
 				}
 
 				case KeyboardKeys.O: {
 					changeTool(Tool.DRAW_OVAL);
+
 					return;
 				}
 
@@ -80,12 +130,12 @@ export function useKeyboardShortcuts({ mode, canvasRef, dispatchWhiteBoardState,
 			}
 		};
 
-		window.addEventListener("keydown", handleKeyDown);
-		window.addEventListener("keyup", handleKeyUp);
+		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('keyup', handleKeyUp);
 
 		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-			window.removeEventListener("keyup", handleKeyUp);
+			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('keyup', handleKeyUp);
 		};
-	}, [canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed, isReadOnly]);
+	}, [canvasRef, elements, selectedIds, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed, isReadOnly, recordSnapshot, redo, undo]);
 }

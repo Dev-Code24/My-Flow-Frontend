@@ -33,6 +33,7 @@ interface WhiteboardProps {
 	onBackToContent: () => void;
 	toolbar?: ReactNode;
 	topRightAction?: ReactNode;
+	bottomLeftAction?: ReactNode;
 }
 
 export default function Whiteboard({
@@ -55,11 +56,13 @@ export default function Whiteboard({
 	onBackToContent,
 	toolbar,
 	topRightAction,
+	bottomLeftAction,
 }: WhiteboardProps) {
 	return (
 		<div className='fixed inset-0 overflow-hidden bg-slate-200'>
-			{toolbar}
+		{toolbar}
 
+		<div className='absolute bottom-6 left-6 z-20 flex items-center gap-2'>
 			<ZoomControls
 				zoom={zoom}
 				onZoomOut={onZoomOut}
@@ -67,27 +70,30 @@ export default function Whiteboard({
 				onResetZoom={onResetZoom}
 			/>
 
-			<BackToContent
-				visible={showBackToContent}
-				onClick={onBackToContent}
-			/>
+			{bottomLeftAction}
+		</div>
 
-			<WhiteboardSurface
-				canvasRef={canvasRef}
-				elements={elements}
-				pan={pan}
-				zoom={zoom}
-				selectedIds={selectedIds}
-				selectionBox={selectionBox}
-				interaction={interaction}
-				onCanvasResize={onCanvasResize}
-				onMouseDown={onMouseDown}
-				onMouseMove={onMouseMove}
-				onMouseUp={onMouseUp}
-				onWheel={onWheel}
-			/>
+		<BackToContent
+			visible={showBackToContent}
+			onClick={onBackToContent}
+		/>
 
-			{topRightAction}
+		<WhiteboardSurface
+			canvasRef={canvasRef}
+			elements={elements}
+			pan={pan}
+			zoom={zoom}
+			selectedIds={selectedIds}
+			selectionBox={selectionBox}
+			interaction={interaction}
+			onCanvasResize={onCanvasResize}
+			onMouseDown={onMouseDown}
+			onMouseMove={onMouseMove}
+			onMouseUp={onMouseUp}
+			onWheel={onWheel}
+		/>
+
+		{topRightAction}
 		</div>
 	);
 }

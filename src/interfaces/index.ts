@@ -41,5 +41,4 @@ export enum Interaction {
   PANNING = 'panning'
 }
 
-export * from './hooks-props.interfaces';
 export * from './states.interfaces';
