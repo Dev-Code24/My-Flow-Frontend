@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { Tool } from "@/interfaces";
-import { CursorStyles, KeyboardKeys } from "@/constants";
+import { CursorType, KeyboardKeys } from "@/constants";
 import { UseKeyboardShortcutsProps } from "@/interfaces/hooks-props.interfaces";
+import { getCursorStyle } from "@/utils";
 
-export function useKeyboardShortcuts({ canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed }: UseKeyboardShortcutsProps): void {
+export function useKeyboardShortcuts({ mode, canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed }: UseKeyboardShortcutsProps): void {
+	const isReadOnly = mode === "readonly";
+	
 	useEffect(() => {
 		const changeTool = (tool: Tool) => {
 			dispatchWhiteBoardState({
@@ -23,36 +26,44 @@ export function useKeyboardShortcuts({ canvasRef, dispatchWhiteBoardState, setIs
 
 				event.preventDefault();
 				setIsSpacePressed(true);
-				canvas.style.cursor = CursorStyles.GRAB;
+				canvas.style.cursor = getCursorStyle(CursorType.GRAB);
 				return;
 			}
 
-			switch (key) {
-				case KeyboardKeys.BACKSPACE:
-					dispatchWhiteBoardState({
-						type: "DELETE_SELECTED",
-					});
-					return;
+			if (isReadOnly) {
+				return; 
+			}
 
-				case KeyboardKeys.V:
+			switch (key) {
+				case KeyboardKeys.BACKSPACE: {
+					dispatchWhiteBoardState({ type: "DELETE_SELECTED" });
+					return;
+				}
+
+				case KeyboardKeys.V: {
 					changeTool(Tool.SELECT);
 					return;
+				}
 
-				case KeyboardKeys.D:
+				case KeyboardKeys.D: {
 					changeTool(Tool.DRAW_RECTANGLE);
 					return;
+				}
 
-				case KeyboardKeys.R:
+				case KeyboardKeys.R: {
 					changeTool(Tool.DRAW_RHOMBUS);
 					return;
+				}
 
-				case KeyboardKeys.O:
+				case KeyboardKeys.O: {
 					changeTool(Tool.DRAW_OVAL);
 					return;
+				}
 
-				case KeyboardKeys.SHIFT:
+				case KeyboardKeys.SHIFT: {
 					setIsShiftPressed(true);
 					return;
+				}
 			}
 		};
 
@@ -76,5 +87,5 @@ export function useKeyboardShortcuts({ canvasRef, dispatchWhiteBoardState, setIs
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed]);
+	}, [canvasRef, dispatchWhiteBoardState, setIsSpacePressed, setIsShiftPressed, isReadOnly]);
 }

@@ -1,12 +1,12 @@
-import { Element, Interaction, Tool, WhiteboardAction, WhiteboardState } from "@/interfaces";
-import { isElementInSelection } from "@/utils";
+import { Element, Interaction, Tool, WhiteboardAction, WhiteboardState } from '@/interfaces';
+import { isElementInSelection } from '@/utils';
 
 export function whiteboardReducer(
   state: WhiteboardState,
   action: WhiteboardAction
 ): WhiteboardState {
    switch (action.type) {
-      case "START_DRAW": {
+      case 'START_DRAW': {
          return {
             ...state,
             elements: [...state.elements, action.element],
@@ -15,35 +15,35 @@ export function whiteboardReducer(
          };
       }
 
-      case "SET_TOOL": {
+      case 'SET_TOOL': {
          return {
             ...state,
             tool: action.tool,
          };
       }
 
-      case "SET_INTERACTION": {
+      case 'SET_INTERACTION': {
          return {
             ...state,
             interaction: action.interaction,
          };
       }
 
-      case "SELECT_ELEMENT": {
+      case 'SELECT_ELEMENT': {
          return {
             ...state,
             selectedIds: [action.id],
          };
       }
 
-      case "CLEAR_SELECTION": {
+      case 'CLEAR_SELECTION': {
          return {
             ...state,
             selectedIds: [],
          };
       }
 
-      case "START_SELECTION": {
+      case 'START_SELECTION': {
          return {
             ...state,
             interaction: Interaction.SELECTING,
@@ -57,7 +57,7 @@ export function whiteboardReducer(
          };
       }
 
-      case "UPDATE_SELECTION": {
+      case 'UPDATE_SELECTION': {
          if (!state.selectionBox) {
             return state;
          }
@@ -77,14 +77,14 @@ export function whiteboardReducer(
          };
       }
 
-      case "SET_ELEMENTS": {
+      case 'SET_ELEMENTS': {
          return {
             ...state,
             elements: action.updater(state.elements),
          };
       }
 
-      case "MOVE_SELECTED": {
+      case 'MOVE_SELECTED': {
          if (state.selectedIds.length === 0) {
             return state;
          }
@@ -103,7 +103,7 @@ export function whiteboardReducer(
          };
       }
 
-      case "END_INTERACTION": {
+      case 'END_INTERACTION': {
          return {
             ...state,
             interaction: Interaction.IDLE,
@@ -111,7 +111,7 @@ export function whiteboardReducer(
          };
       }
 
-      case "NORMALIZE_ELEMENTS": {
+      case 'NORMALIZE_ELEMENTS': {
          return {
             ...state,
             elements: state.elements.map((el: Element) => ({
@@ -124,7 +124,7 @@ export function whiteboardReducer(
          };
       }
          
-      case "CHANGE_TOOL": {
+      case 'CHANGE_TOOL': {
          return {
             ...state,
             tool: action.tool,
@@ -135,7 +135,7 @@ export function whiteboardReducer(
          };
       }
          
-      case "DELETE_SELECTED": {
+      case 'DELETE_SELECTED': {
          if (state.selectedIds.length === 0) { return state; }
        
          return {

@@ -1,17 +1,18 @@
-import type { Metadata } from "next";
-import { Fira_Sans } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Fira_Sans } from 'next/font/google';
+import './globals.css';
+import Toast from '@/ui/toast/Toast';
 
 const fira_sans = Fira_Sans({
-  variable: "--font-fira-sans",
-  style: ["normal", "italic"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  subsets: ["latin"],
+  variable: '--font-fira-sans',
+  style: ['normal', 'italic'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "My Flow - Create your flows here",
-  description: "Create your flows here. Share your flows, or collaborate on your flows.",
+  title: 'My Flow - Create your flows here',
+  description: 'Create your flows here. Share your flows, or collaborate on your flows.',
 };
 
 export default function RootLayout({
@@ -21,9 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang='en'
       className={`${fira_sans.variable} h-full antialiased`}>
-      <body className="min-h-full">{children}</body>
+      <body suppressHydrationWarning className='min-h-full'>
+        {children}
+        <Toast />
+      </body>
     </html>
   );
 }

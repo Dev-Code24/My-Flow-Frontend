@@ -13,7 +13,7 @@ export enum Tool {
 }
 
 export interface Element {
-  id: number;
+  id: string;
   x: number;
   y: number;
   width: number;
