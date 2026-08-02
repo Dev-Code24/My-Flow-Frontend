@@ -16,6 +16,9 @@ export interface WhiteboardState {
    documentRevision: number;
 }
 
+export type SelectionMode = 'replace' | 'add' | 'toggle';
+export type MarqueeSelectionMode = 'replace' | 'add';
+
 export type WhiteboardAction =
    | {
       type: 'START_DRAW';
@@ -32,6 +35,7 @@ export type WhiteboardAction =
    | {
       type: 'SELECT_ELEMENT';
       id: string;
+      mode: SelectionMode;
    }
    | {
       type: 'CLEAR_SELECTION';
@@ -40,11 +44,14 @@ export type WhiteboardAction =
       type: 'START_SELECTION';
       x: number;
       y: number;
+      mode: MarqueeSelectionMode;
    }
    | {
       type: 'UPDATE_SELECTION';
       x: number;
       y: number;
+      mode: MarqueeSelectionMode;
+      baseSelectedIds: string[];
    }
    | {
       type: 'SET_ELEMENTS';
@@ -54,6 +61,16 @@ export type WhiteboardAction =
       type: 'MOVE_SELECTED';
       dx: number;
       dy: number;
+   }
+   | {
+      type: 'DUPLICATE_SELECTED';
+      elementIds: string[];
+   }
+   | {
+      type: 'RESTORE_INTERACTION_STATE';
+      elements: Element[];
+      selectedIds: string[];
+      documentRevision: number;
    }
    | {
       type: 'END_INTERACTION';
@@ -66,7 +83,7 @@ export type WhiteboardAction =
       tool: Tool;
    }
    | {
-      type: 'DELETE_SELECTED'
+      type: 'DELETE_SELECTED';
    };
 
 export type WhiteboardMode = 'editable' | 'readonly';

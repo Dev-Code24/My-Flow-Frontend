@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useRef, useState } from 'react';
+import { useCallback, useReducer, useRef, useState } from 'react';
 
 import Whiteboard from '@/components/whiteboard';
 import { EditSharedFlowButton } from '@/components';
@@ -24,13 +24,12 @@ export default function SharedFlowPage() {
 
 	const mode: WhiteboardMode = 'readonly';
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const [isShiftPressed, setIsShiftPressed] = useState<boolean>(false);
 	const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
 	const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
 	const { document, isLoading, error } = useSharedFlow(flowId);
 	const [whiteBoardState, dispatchWhiteBoardState] = useReducer<WhiteboardState, [action: WhiteboardAction]>(whiteboardReducer, initialWhiteBoardState);
 
-	const { interaction, selectedIds, selectionBox, tool } = whiteBoardState;
+	const { interaction, tool } = whiteBoardState;
 
 	const elements: Element[] = document ? document.canvas.elements : [];
 
@@ -52,6 +51,10 @@ export default function SharedFlowPage() {
 		initialZoom: 1,
 	});
 
+	const cancelInteraction = useCallback((): void => {
+		dispatchWhiteBoardState({ type: 'END_INTERACTION' });
+	}, [dispatchWhiteBoardState]);
+
 	const {
 		handleMouseDown,
 		handleMouseMove,
@@ -59,14 +62,10 @@ export default function SharedFlowPage() {
 	} = useWhiteboardInteractions({
 		mode,
 		canvasRef,
-		elements,
 		interaction,
-		selectedIds,
-		selectionBox,
 		tool,
 		pan,
 		zoom,
-		isShiftPressed,
 		isSpacePressed,
 		setPan,
 		dispatchWhiteBoardState,
@@ -74,11 +73,9 @@ export default function SharedFlowPage() {
 
 	useKeyboardShortcuts({
 		mode,
+		cancelInteraction,
 		canvasRef,
-		selectedIds,
-		dispatchWhiteBoardState,
-		setIsSpacePressed,
-		setIsShiftPressed,
+		setIsSpacePressed
 	});
 
 	useWhiteboardCursor({

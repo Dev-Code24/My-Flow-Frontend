@@ -1,21 +1,25 @@
 import { Interaction, Tool, WhiteboardState } from '@/interfaces';
 
 export enum KeyboardKeys {
-   SHIFT = 'shift',
    O = 'o',
    V = 'v',
    R = 'r',
    D = 'd',
+   Z = 'z',
+   Y = 'y',
+   SHIFT = 'shift',
    BACKSPACE = 'backspace',
    DELETE = 'delete',
    SPACEBAR = ' ',
-   Z = 'z',
-   Y = 'y',
+   ALT = 'alt',
+   ESCAPE = 'escape',
 };
 
+export const EPSILON = 1e-6;
 export const MIN_SHAPE_SIZE = 18;
-
-export const CORNER_HANDLES = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+export const ARROW_HANDLE_HIT_THRESHOLD = 15;
+export const ARROW_CURVE_MIN_ENDPOINT_DISTANCE = 0.15;
+export const ARROW_SELECTION_PADDING = 12;
 
 export enum CursorType {
    POINTER = 'pointer',
@@ -40,3 +44,5 @@ export const initialWhiteBoardState: WhiteboardState = {
    tool: Tool.SELECT,
    documentRevision: 0,
 };
+
+export * from './zoom.constants';

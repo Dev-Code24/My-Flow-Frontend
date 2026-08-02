@@ -2,8 +2,8 @@
 
 import { RefObject, useCallback, useMemo, useState } from "react";
 
+import { MAX_ZOOM, MIN_ZOOM, WHEEL_ZOOM_SENSITIVITY, ZOOM_STEP } from "@/constants";
 import { Coordinates2D, Element } from "@/interfaces";
-
 import { getContentBounds } from "@/utils";
 
 interface CanvasSize {
@@ -33,11 +33,6 @@ interface UseWhiteboardViewportResult {
 	backToContent: () => void;
 }
 
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 3;
-const ZOOM_STEP = 0.1;
-const WHEEL_ZOOM_SENSITIVITY = 0.01;
-
 export function useWhiteboardViewport({
 	canvasRef,
 	elements,
@@ -48,13 +43,8 @@ export function useWhiteboardViewport({
 	initialZoom = 1,
 }: UseWhiteboardViewportParams): UseWhiteboardViewportResult {
 	const [pan, setPan] = useState<Coordinates2D>(initialPan);
-
 	const [zoom, setZoom] = useState<number>(initialZoom);
-
-	const [canvasSize, setCanvasSize] = useState<CanvasSize>({
-		width: 0,
-		height: 0,
-	});
+	const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 0, height: 0 });
 
 	const contentBounds = useMemo(() => getContentBounds(elements), [elements]);
 
@@ -62,11 +52,7 @@ export function useWhiteboardViewport({
 		if (elements.length === 0) { return; }
 	
 		const { minValues, maxValues } = contentBounds;
-	
-		const contentCenter: Coordinates2D = {
-			x: (minValues.x + maxValues.x) / 2,
-			y: (minValues.y + maxValues.y) / 2,
-		};
+		const contentCenter: Coordinates2D = { x: (minValues.x + maxValues.x) / 2, y: (minValues.y + maxValues.y) / 2 };
 	
 		setPan({
 			x: canvasSize.width / 2 - contentCenter.x * zoom,
@@ -80,18 +66,8 @@ export function useWhiteboardViewport({
 		}
 
 		const { minValues, maxValues } = contentBounds;
-
-		const viewportMin: Coordinates2D = {
-			x: -pan.x / zoom,
-			y: -pan.y / zoom,
-		};
-
-		const viewportMax: Coordinates2D = {
-			x: (-pan.x + canvasSize.width) / zoom,
-
-			y: (-pan.y + canvasSize.height) / zoom,
-		};
-
+		const viewportMin: Coordinates2D = { x: -pan.x / zoom, y: -pan.y / zoom };
+		const viewportMax: Coordinates2D = { x: (-pan.x + canvasSize.width) / zoom, y: (-pan.y + canvasSize.height) / zoom };
 		const isContentVisible = minValues.x < viewportMax.x && maxValues.x > viewportMin.x && minValues.y < viewportMax.y && maxValues.y > viewportMin.y;
 
 		return !isContentVisible;
