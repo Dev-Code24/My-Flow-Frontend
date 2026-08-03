@@ -4,7 +4,7 @@ import { RefObject, useEffect, useLayoutEffect, useState } from 'react';
 
 import { Coordinates2D, Element, Interaction, WhiteboardState } from '@/interfaces';
 
-import { drawCanvas } from '@/utils/draw-canvas';
+import { drawCanvas } from '@/utils';
 
 interface CanvasSize {
 	width: number;
@@ -40,10 +40,7 @@ export default function WhiteboardSurface({
 	onMouseUp,
 	onWheel,
 }: WhiteboardSurfaceProps) {
-	const [canvasSize, setCanvasSize] = useState<CanvasSize>({
-		width: 0,
-		height: 0,
-	});
+	const [canvasSize, setCanvasSize] = useState<CanvasSize>({ width: 0, height: 0 });
 
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current;

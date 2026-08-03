@@ -1,10 +1,7 @@
-import { Element, Interaction, Tool, WhiteboardAction, WhiteboardState } from '@/interfaces';
+import { Element, Interaction, Shape, Tool, WhiteboardAction, WhiteboardState } from '@/interfaces';
 import { isElementInSelection } from '@/utils';
 
-export function whiteboardReducer(
-  state: WhiteboardState,
-  action: WhiteboardAction
-): WhiteboardState {
+export function whiteboardReducer(state: WhiteboardState, action: WhiteboardAction): WhiteboardState {
    switch (action.type) {
       case 'START_DRAW': {
          return {
@@ -31,9 +28,29 @@ export function whiteboardReducer(
       }
 
       case 'SELECT_ELEMENT': {
+         if (action.mode === 'replace') {
+            return {
+               ...state,
+               selectedIds: [action.id],
+            };
+         }
+
+         if (action.mode === 'add') {
+            if (state.selectedIds.includes(action.id)) {
+               return state;
+            }
+
+            return {
+               ...state,
+               selectedIds: [...state.selectedIds, action.id],
+            };
+         }
+
          return {
             ...state,
-            selectedIds: [action.id],
+            selectedIds: state.selectedIds.includes(action.id)
+               ? state.selectedIds.filter((id) => id !== action.id)
+               : [...state.selectedIds, action.id],
          };
       }
 
@@ -48,7 +65,7 @@ export function whiteboardReducer(
          return {
             ...state,
             interaction: Interaction.SELECTING,
-            selectedIds: [],
+            selectedIds: action.mode === 'replace' ? [] : state.selectedIds,
             selectionBox: {
                x1: action.x,
                y1: action.y,
@@ -69,12 +86,16 @@ export function whiteboardReducer(
             y2: action.y,
          };
 
+         const enclosedIds = state.elements
+            .filter((element) => isElementInSelection(element, box))
+            .map((element) => element.id);
+
          return {
             ...state,
             selectionBox: box,
-            selectedIds: state.elements
-               .filter((el) => isElementInSelection(el, box))
-               .map((el) => el.id),
+            selectedIds: action.mode === 'replace'
+               ? enclosedIds
+               : Array.from(new Set([...action.baseSelectedIds, ...enclosedIds])),
          };
       }
 
@@ -93,17 +114,52 @@ export function whiteboardReducer(
 
          return {
             ...state,
-            elements: state.elements.map((el: Element) => {
-                  return state.selectedIds.includes(el.id)
-                     ? {
-                        ...el,
-                        x: el.x + action.dx,
-                        y: el.y + action.dy,
-                     }
-                     : el
-               }
-            ),
+            elements: state.elements.map((element: Element) => {
+               return state.selectedIds.includes(element.id)
+                  ? {
+                     ...element,
+                     x: element.x + action.dx,
+                     y: element.y + action.dy,
+                  }
+                  : element;
+            }),
             documentRevision: state.documentRevision + 1,
+         };
+      }
+
+      case 'DUPLICATE_SELECTED': {
+         if (action.elementIds.length === 0) {
+            return state;
+         }
+
+         const elementIds = new Set(action.elementIds);
+         const duplicates = state.elements
+            .filter((element) => elementIds.has(element.id))
+            .map((element) => ({
+               ...structuredClone(element),
+               id: crypto.randomUUID(),
+            }));
+
+         if (duplicates.length === 0) {
+            return state;
+         }
+
+         return {
+            ...state,
+            elements: [...state.elements, ...duplicates],
+            selectedIds: duplicates.map((element) => element.id),
+            documentRevision: state.documentRevision + 1,
+         };
+      }
+
+      case 'RESTORE_INTERACTION_STATE': {
+         return {
+            ...state,
+            elements: action.elements,
+            selectedIds: action.selectedIds,
+            documentRevision: action.documentRevision,
+            interaction: Interaction.IDLE,
+            selectionBox: null,
          };
       }
 
@@ -118,34 +174,27 @@ export function whiteboardReducer(
       case 'NORMALIZE_ELEMENTS': {
          return {
             ...state,
-            elements: state.elements.map((el: Element) => ({
-               ...el,
-               x: el.width < 0 ? el.x + el.width : el.x,
-               y: el.height < 0 ? el.y + el.height : el.y,
-               width: Math.abs(el.width),
-               height: Math.abs(el.height),
-            })),
+            elements: state.elements.map(normalizeElement),
          };
       }
-         
+
       case 'CHANGE_TOOL': {
          return {
             ...state,
             tool: action.tool,
-            selectedIds:
-               action.tool === Tool.SELECT
-                  ? state.selectedIds
-                  : [],
+            selectedIds: action.tool === Tool.SELECT ? state.selectedIds : [],
          };
       }
-         
+
       case 'DELETE_SELECTED': {
-         if (state.selectedIds.length === 0) { return state; }
-       
+         if (state.selectedIds.length === 0) {
+            return state;
+         }
+
          return {
             ...state,
             elements: state.elements.filter(
-               el => !state.selectedIds.includes(el.id)
+               (element) => !state.selectedIds.includes(element.id)
             ),
             selectedIds: [],
             documentRevision: state.documentRevision + 1,
@@ -156,4 +205,22 @@ export function whiteboardReducer(
          return state;
       }
    }
+}
+
+function normalizeElement(element: Element): Element {
+   if (element.shape === Shape.ARROW) {
+      return element;
+   }
+
+   return {
+      ...element,
+      x: element.width < 0
+         ? element.x + element.width
+         : element.x,
+      y: element.height < 0
+         ? element.y + element.height
+         : element.y,
+      width: Math.abs(element.width),
+      height: Math.abs(element.height),
+   };
 }

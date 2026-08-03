@@ -1,7 +1,7 @@
 'use client'
 
 import { Tool, WhiteboardAction } from '@/interfaces';
-import { MousePointer2, Square, Diamond, Circle, LockKeyholeOpen, Hand, Shapes } from 'lucide-react';
+import { MousePointer2, Square, Diamond, Circle, LockKeyholeOpen, Hand, Shapes, ArrowUpRight } from 'lucide-react';
 import React, { Dispatch, SetStateAction, useState } from 'react';
 
 interface ShapesNavbarProps {
@@ -15,6 +15,7 @@ const TOOLS = [
   { id: Tool.DRAW_RECTANGLE, Icon: Square,        label: 'Rectangle', shortcut: '2' },
   { id: Tool.DRAW_RHOMBUS,   Icon: Diamond,       label: 'Rhombus',   shortcut: '3' },
   { id: Tool.DRAW_OVAL,      Icon: Circle,        label: 'Oval',      shortcut: '4' },
+  { id: Tool.DRAW_ARROW,     Icon: ArrowUpRight,  label: 'Arrow',     shortcut: '5' },
 ] as const;
 
 export default function ShapesNavbar({ tool, dispatchWhiteBoardState, setIsSpacePressed }: ShapesNavbarProps) {

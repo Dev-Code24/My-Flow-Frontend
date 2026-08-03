@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { SharedFlowDocument } from "@/lib/interfaces";
 import { getSharedFlow } from "@/lib/api/share";
-import { isValidSharedFlowDocument } from "@/utils/draw-canvas";
+import { isValidSharedFlowDocument } from "@/utils";
 
 interface UseSharedFlowResult {
 	document: SharedFlowDocument | null;
