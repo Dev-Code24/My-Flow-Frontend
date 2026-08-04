@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { RefObject, useCallback, useMemo, useState } from "react";
+import { RefObject, useCallback, useMemo, useState } from 'react';
 
-import { MAX_ZOOM, MIN_ZOOM, WHEEL_ZOOM_SENSITIVITY, ZOOM_STEP } from "@/constants";
-import { Coordinates2D, Element } from "@/interfaces";
-import { getContentBounds } from "@/utils";
+import { MAX_ZOOM, MIN_ZOOM, WHEEL_ZOOM_SENSITIVITY, ZOOM_STEP } from '@/constants';
+import { Coordinates2D, Element } from '@/interfaces';
+import { getContentBounds } from '@/utils';
 
 interface CanvasSize {
 	width: number;

@@ -1,5 +1,5 @@
-import { FlowDocumentData, LocalWorkspace } from "@/lib/interfaces";
-import { LOCAL_STORAGE_KEY } from "../constants";
+import { FlowDocumentData, LocalWorkspace } from '@/lib/interfaces';
+import { LOCAL_STORAGE_KEY } from '../constants';
 
 const WORKSPACE_VERSION = 1;
 
@@ -41,21 +41,21 @@ export function clearWorkspace(): void {
 }
 
 function isValidWorkspace(value: unknown): value is LocalWorkspace {
-	if (typeof value !== "object" || value === null) {
+	if (typeof value !== 'object' || value === null) {
 		return false;
 	}
 
-	if (!("version" in value) || value.version !== WORKSPACE_VERSION || !("document" in value)) {
+	if (!('version' in value) || value.version !== WORKSPACE_VERSION || !('document' in value)) {
 		return false;
 	}
 
 	const document = value.document;
 
-	if (typeof document !== "object" || document === null) {
+	if (typeof document !== 'object' || document === null) {
 		return false;
 	}
 
-	if (!("elements" in document) || !("pan" in document) || !("zoom" in document)) {
+	if (!('elements' in document) || !('pan' in document) || !('zoom' in document)) {
 		return false;
 	}
 
@@ -63,17 +63,17 @@ function isValidWorkspace(value: unknown): value is LocalWorkspace {
 		return false;
 	}
 
-	if (typeof document.zoom !== "number" || !Number.isFinite(document.zoom)) {
+	if (typeof document.zoom !== 'number' || !Number.isFinite(document.zoom)) {
 		return false;
 	}
 
 	if (
-		typeof document.pan !== "object" ||
+		typeof document.pan !== 'object' ||
 		document.pan === null ||
-		!("x" in document.pan) ||
-		!("y" in document.pan) ||
-		typeof document.pan.x !== "number" ||
-		typeof document.pan.y !== "number"
+		!('x' in document.pan) ||
+		!('y' in document.pan) ||
+		typeof document.pan.x !== 'number' ||
+		typeof document.pan.y !== 'number'
 	) {
 		return false;
 	}

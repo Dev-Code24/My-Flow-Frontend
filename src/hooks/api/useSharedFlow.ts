@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import { SharedFlowDocument } from "@/lib/interfaces";
-import { getSharedFlow } from "@/lib/api/share";
-import { isValidSharedFlowDocument } from "@/utils";
+import { SharedFlowDocument } from '@/lib/interfaces';
+import { getSharedFlow } from '@/lib/api/share';
+import { isValidSharedFlowDocument } from '@/utils';
 
 interface UseSharedFlowResult {
 	document: SharedFlowDocument | null;
@@ -34,7 +34,7 @@ export function useSharedFlow(flowId: string): UseSharedFlowResult {
 				const sharedDocument = response.data.document;
 
 				if (!isValidSharedFlowDocument(sharedDocument)) {
-					throw new Error("The shared flow document has an invalid format.");
+					throw new Error('The shared flow document has an invalid format.');
 				}
 
 				setDocument(sharedDocument);
@@ -43,7 +43,7 @@ export function useSharedFlow(flowId: string): UseSharedFlowResult {
 					return;
 				}
 
-				setError(error instanceof Error ? error : new Error("Failed to load shared flow."));
+				setError(error instanceof Error ? error : new Error('Failed to load shared flow.'));
 			} finally {
 				if (!isCancelled) {
 					setIsLoading(false);

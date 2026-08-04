@@ -1,14 +1,14 @@
-import { toast } from "@/ui/toast/toast.service";
-import { ApiError } from "../errors";
-import { ApiResponse } from "../interfaces";
+import { toast } from '@/ui/toast/toast.service';
+import { ApiError } from '../errors';
+import { ApiResponse } from '../interfaces';
 
 export function createRequestHeaders(headers: HeadersInit | undefined, body: unknown): Headers {
   const requestHeaders = new Headers(headers);
 
   if (body !== undefined) {
     requestHeaders.set(
-      "Content-Type",
-      "application/json"
+      'Content-Type',
+      'application/json'
     );
   }
 
@@ -23,13 +23,13 @@ export async function createHttpError(response: Response): Promise<ApiError> {
   const message = await getErrorMessage(response);
 
   return new ApiError(message, {
-    type: "http",
+    type: 'http',
     status: response.status,
   });
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
-  const fallbackMessage = "The request failed.";
+  const fallbackMessage = 'The request failed.';
 
   try {
     const responseBody: unknown =
@@ -37,9 +37,9 @@ async function getErrorMessage(response: Response): Promise<string> {
 
     if (
       responseBody !== null &&
-      typeof responseBody === "object" &&
-      "message" in responseBody &&
-      typeof responseBody.message === "string"
+      typeof responseBody === 'object' &&
+      'message' in responseBody &&
+      typeof responseBody.message === 'string'
     ) {
       return responseBody.message;
     }
@@ -55,9 +55,9 @@ export async function parseApiResponse<T>(response: Response): Promise<ApiRespon
     return await response.json() as ApiResponse<T>;
   } catch (error) {
     throw new ApiError(
-      "The server returned an invalid response.",
+      'The server returned an invalid response.',
       {
-        type: "invalid-response",
+        type: 'invalid-response',
         cause: error,
       }
     );
@@ -71,7 +71,7 @@ export function normalizeApiError(error: unknown, timeoutController: AbortContro
 
   if (
     error instanceof DOMException &&
-    error.name === "AbortError"
+    error.name === 'AbortError'
   ) {
     return createAbortError(
       error,
@@ -83,16 +83,16 @@ export function normalizeApiError(error: unknown, timeoutController: AbortContro
     return new ApiError(
       getNetworkErrorMessage(),
       {
-        type: "network",
+        type: 'network',
         cause: error,
       }
     );
   }
 
   return new ApiError(
-    "An unexpected error occurred.",
+    'An unexpected error occurred.',
     {
-      type: "unknown",
+      type: 'unknown',
       cause: error,
     }
   );
@@ -100,31 +100,31 @@ export function normalizeApiError(error: unknown, timeoutController: AbortContro
 
 function createAbortError(error: DOMException, timedOut: boolean): ApiError {
   return new ApiError(
-    (timedOut ? "The request timed out. Please try again." : "The request was cancelled."),
+    (timedOut ? 'The request timed out. Please try again.' : 'The request was cancelled.'),
     {
       type: timedOut
-        ? "timeout"
-        : "cancelled",
+        ? 'timeout'
+        : 'cancelled',
       cause: error,
     }
   );
 }
 
 function getNetworkErrorMessage(): string {
-  return navigator.onLine ? "Unable to connect to the server." : "You appear to be offline. Please check your internet connection.";
+  return navigator.onLine ? 'Unable to connect to the server.' : 'You appear to be offline. Please check your internet connection.';
 }
 
 export function showInfrastructureError(error: ApiError): void {
   switch (error.type) {
-    case "network":
-    case "timeout":
-    case "invalid-response":
-    case "unknown":
+    case 'network':
+    case 'timeout':
+    case 'invalid-response':
+    case 'unknown':
       toast.error(error.message);
       break;
 
-    case "http":
-    case "cancelled":
+    case 'http':
+    case 'cancelled':
       break;
   }
 }

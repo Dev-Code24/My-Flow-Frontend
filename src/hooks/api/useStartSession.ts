@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import { createRoom } from "@/lib/api/rooms";
-import { RoomDuration } from "@/lib/interfaces";
-import { toast } from "@/ui/toast/toast.service";
+import { createRoom } from '@/lib/api/rooms';
+import { RoomDuration } from '@/lib/interfaces';
+import { toast } from '@/ui/toast/toast.service';
 
 interface UseStartSessionResult {
   startSession: () => Promise<void>;
@@ -29,9 +29,8 @@ export function useStartSession(): UseStartSessionResult {
 
          router.push(`/room/${roomId}`);
       } catch (error) {
-         console.error("Failed to start collaboration session:", error);
-
-         toast.error("We couldn't start the collaboration session. Please try again.");
+         console.error('Failed to start collaboration session:', error);
+         toast.error(`We couldn't start the collaboration session. Please try again.`);
       } finally {
          setIsStartingSession(false);
       }

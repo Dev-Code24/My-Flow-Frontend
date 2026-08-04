@@ -1,4 +1,4 @@
-import { Coordinates2D } from "@/interfaces";
+import { Coordinates2D } from '@/interfaces';
 
 export function getMouseXY(e: React.MouseEvent, rect: DOMRect): { mouseX: number; mouseY: number } {
    return { mouseX: e.clientX - rect.left, mouseY: e.clientY - rect.top };

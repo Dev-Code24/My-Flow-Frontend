@@ -138,14 +138,21 @@ export function updateElementPropertiesUsingHandles(
 	mouseX: number,
 	mouseY: number,
 	anchor: { x: number; y: number } | null,
+	isShiftPressed: boolean,
+	isAltPressed: boolean,
+	resizeStartElement: Element | null,
 ): Element {
 	if (activeHandle === 'rotation') {
-		return updateRotation(el, mouseX, mouseY);
+		return updateRotation(el, mouseX, mouseY, isShiftPressed);
+	}
+
+	if (isAltPressed && resizeStartElement && isBoundsResizeHandle(activeHandle)) {
+		return resizeElementFromCenter(resizeStartElement, activeHandle, { x: mouseX, y: mouseY }, isShiftPressed);
 	}
 
 	if (el.shape === Shape.ARROW) {
 		if (activeHandle === 'start' || activeHandle === 'end') {
-			return updateStraightArrowEndpoint(el, activeHandle, mouseX, mouseY);
+			return updateStraightArrowEndpoint(el, activeHandle, mouseX, mouseY, isShiftPressed);
 		}
 
 		if (activeHandle === 'curve') {
@@ -202,10 +209,98 @@ export function updateElementPropertiesUsingHandles(
 	};
 }
 
-export function updateRotation(el: Element, mouseX: number, mouseY: number): Element {
+
+function resizeElementFromCenter(element: Element, handle: BoundsResizeHandle, mouse: Coordinates2D, isShiftPressed: boolean): Element {
+	const centerX = element.x + element.width / 2;
+	const centerY = element.y + element.height / 2;
+	const dx = mouse.x - centerX;
+	const dy = mouse.y - centerY;
+	const cos = Math.cos(-element.angle);
+	const sin = Math.sin(-element.angle);
+	const localMouseX = dx * cos - dy * sin;
+	const localMouseY = dx * sin + dy * cos;
+
+	let width = element.width;
+	let height = element.height;
+
+	switch (handle) {
+		case 'left':
+			width = -2 * localMouseX;
+			break;
+		case 'right':
+			width = 2 * localMouseX;
+			break;
+		case 'top':
+			height = -2 * localMouseY;
+			break;
+		case 'bottom':
+			height = 2 * localMouseY;
+			break;
+		case 'top-left':
+			width = -2 * localMouseX;
+			height = -2 * localMouseY;
+			break;
+		case 'top-right':
+			width = 2 * localMouseX;
+			height = -2 * localMouseY;
+			break;
+		case 'bottom-left':
+			width = -2 * localMouseX;
+			height = 2 * localMouseY;
+			break;
+		case 'bottom-right':
+			width = 2 * localMouseX;
+			height = 2 * localMouseY;
+			break;
+	}
+
+	if (isShiftPressed && isCornerHandle(handle)) {
+		const originalWidth = Math.abs(element.width);
+		const originalHeight = Math.abs(element.height);
+
+		if (originalWidth > 0 && originalHeight > 0) {
+			const widthScale = Math.abs(width) / originalWidth;
+			const heightScale = Math.abs(height) / originalHeight;
+			const scale = Math.max(widthScale, heightScale);
+
+			width = Math.sign(width || element.width) * originalWidth * scale;
+			height = Math.sign(height || element.height) * originalHeight * scale;
+		}
+	}
+
+	width = clampSignedDimension(width);
+	height = clampSignedDimension(height);
+
+	return {
+		...element,
+		x: centerX - width / 2,
+		y: centerY - height / 2,
+		width,
+		height,
+	};
+}
+
+function clampSignedDimension(value: number): number {
+	if (Math.abs(value) >= MIN_SHAPE_SIZE) {
+		return value;
+	}
+
+	return (value < 0 ? -1 : 1) * MIN_SHAPE_SIZE;
+}
+
+export function updateRotation(
+	el: Element,
+	mouseX: number,
+	mouseY: number,
+	isShiftPressed: boolean,
+): Element {
 	const centerX = el.x + el.width / 2;
 	const centerY = el.y + el.height / 2;
-	const angle = Math.atan2(mouseY - centerY, mouseX - centerX) + Math.PI / 2;
+	const rawAngle = Math.atan2(mouseY - centerY, mouseX - centerX) + Math.PI / 2;
+	const rotationSnapIncrement = Math.PI / 12;
+	const angle = isShiftPressed
+		? Math.round(rawAngle / rotationSnapIncrement) * rotationSnapIncrement
+		: rawAngle;
 
 	return { ...el, angle };
 }
@@ -216,13 +311,25 @@ export function updateElementByHandle(
 	activeHandle: ResizeHandle,
 	mouse: Coordinates2D,
 	resizeAnchor: Coordinates2D | null,
+	isShiftPressed: boolean,
+	isAltPressed: boolean,
+	resizeStartElement: Element | null,
 ): Element[] {
 	return elements.map((element) => {
 		if (element.id !== elementId) {
 			return element;
 		}
 
-		return updateElementPropertiesUsingHandles(activeHandle, element, mouse.x, mouse.y, resizeAnchor);
+		return updateElementPropertiesUsingHandles(
+			activeHandle,
+			element,
+			mouse.x,
+			mouse.y,
+			resizeAnchor,
+			isShiftPressed,
+			isAltPressed,
+			resizeStartElement,
+		);
 	});
 }
 
