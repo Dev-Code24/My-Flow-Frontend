@@ -139,9 +139,15 @@ export function updateElementPropertiesUsingHandles(
 	mouseY: number,
 	anchor: { x: number; y: number } | null,
 	isShiftPressed: boolean,
+	isAltPressed: boolean,
+	resizeStartElement: Element | null,
 ): Element {
 	if (activeHandle === 'rotation') {
 		return updateRotation(el, mouseX, mouseY, isShiftPressed);
+	}
+
+	if (isAltPressed && resizeStartElement && isBoundsResizeHandle(activeHandle)) {
+		return resizeElementFromCenter(resizeStartElement, activeHandle, { x: mouseX, y: mouseY }, isShiftPressed);
 	}
 
 	if (el.shape === Shape.ARROW) {
@@ -203,6 +209,85 @@ export function updateElementPropertiesUsingHandles(
 	};
 }
 
+
+function resizeElementFromCenter(element: Element, handle: BoundsResizeHandle, mouse: Coordinates2D, isShiftPressed: boolean): Element {
+	const centerX = element.x + element.width / 2;
+	const centerY = element.y + element.height / 2;
+	const dx = mouse.x - centerX;
+	const dy = mouse.y - centerY;
+	const cos = Math.cos(-element.angle);
+	const sin = Math.sin(-element.angle);
+	const localMouseX = dx * cos - dy * sin;
+	const localMouseY = dx * sin + dy * cos;
+
+	let width = element.width;
+	let height = element.height;
+
+	switch (handle) {
+		case 'left':
+			width = -2 * localMouseX;
+			break;
+		case 'right':
+			width = 2 * localMouseX;
+			break;
+		case 'top':
+			height = -2 * localMouseY;
+			break;
+		case 'bottom':
+			height = 2 * localMouseY;
+			break;
+		case 'top-left':
+			width = -2 * localMouseX;
+			height = -2 * localMouseY;
+			break;
+		case 'top-right':
+			width = 2 * localMouseX;
+			height = -2 * localMouseY;
+			break;
+		case 'bottom-left':
+			width = -2 * localMouseX;
+			height = 2 * localMouseY;
+			break;
+		case 'bottom-right':
+			width = 2 * localMouseX;
+			height = 2 * localMouseY;
+			break;
+	}
+
+	if (isShiftPressed && isCornerHandle(handle)) {
+		const originalWidth = Math.abs(element.width);
+		const originalHeight = Math.abs(element.height);
+
+		if (originalWidth > 0 && originalHeight > 0) {
+			const widthScale = Math.abs(width) / originalWidth;
+			const heightScale = Math.abs(height) / originalHeight;
+			const scale = Math.max(widthScale, heightScale);
+
+			width = Math.sign(width || element.width) * originalWidth * scale;
+			height = Math.sign(height || element.height) * originalHeight * scale;
+		}
+	}
+
+	width = clampSignedDimension(width);
+	height = clampSignedDimension(height);
+
+	return {
+		...element,
+		x: centerX - width / 2,
+		y: centerY - height / 2,
+		width,
+		height,
+	};
+}
+
+function clampSignedDimension(value: number): number {
+	if (Math.abs(value) >= MIN_SHAPE_SIZE) {
+		return value;
+	}
+
+	return (value < 0 ? -1 : 1) * MIN_SHAPE_SIZE;
+}
+
 export function updateRotation(
 	el: Element,
 	mouseX: number,
@@ -227,6 +312,8 @@ export function updateElementByHandle(
 	mouse: Coordinates2D,
 	resizeAnchor: Coordinates2D | null,
 	isShiftPressed: boolean,
+	isAltPressed: boolean,
+	resizeStartElement: Element | null,
 ): Element[] {
 	return elements.map((element) => {
 		if (element.id !== elementId) {
@@ -240,6 +327,8 @@ export function updateElementByHandle(
 			mouse.y,
 			resizeAnchor,
 			isShiftPressed,
+			isAltPressed,
+			resizeStartElement,
 		);
 	});
 }

@@ -9,13 +9,18 @@ export function updateArrowBoundsByHandle(
 	handle: BoundsResizeHandle,
 	mouse: Coordinates2D,
 	zoom: number,
+	isAltPressed: boolean,
+	isShiftPressed: boolean,
+	resizeStartElement: Element,
 ): Element[] {
 	return elements.map((element) => {
 		if (element.id !== elementId || element.shape !== Shape.ARROW) {
 			return element;
 		}
 
-		return resizeArrowFromBounds(element, handle, mouse, zoom);
+		return isAltPressed
+			? resizeArrowFromCenter(resizeStartElement, handle, mouse, zoom, isShiftPressed)
+			: resizeArrowFromBounds(element, handle, mouse, zoom);
 	});
 }
 
@@ -34,12 +39,87 @@ export function getArrowSelectionBounds(element: Element): ArrowBounds {
 	return getQuadraticCurveBounds(start, control, end);
 }
 
-function resizeArrowFromBounds(
-	element: Element,
-	handle: BoundsResizeHandle,
-	mouse: Coordinates2D,
-	zoom: number,
-): Element {
+function resizeArrowFromCenter(element: Element, handle: BoundsResizeHandle, mouse: Coordinates2D, zoom: number, isShiftPressed: boolean): Element {
+	const oldBounds = getArrowSelectionBounds(element);
+	const elementCenter = {
+		x: element.x + element.width / 2,
+		y: element.y + element.height / 2,
+	};
+
+	const localMouse = worldPointToLocal(mouse, elementCenter, element.angle);
+
+	const padding = ARROW_SELECTION_PADDING / zoom;
+	const resizedBoundary = removeSelectionPadding(localMouse, handle, padding);
+
+	const newBounds = getCenteredArrowBounds(oldBounds, handle, resizedBoundary, isShiftPressed);
+
+	const oldWidth = oldBounds.maxX - oldBounds.minX;
+	const oldHeight = oldBounds.maxY - oldBounds.minY;
+
+	if (Math.abs(oldWidth) < EPSILON || Math.abs(oldHeight) < EPSILON) {
+		return element;
+	}
+
+	const { start, control, end } = getArrowLocalPoints(element);
+	const newStart = transformPointBetweenBounds(start, oldBounds, newBounds);
+	const newControl = transformPointBetweenBounds(control, oldBounds, newBounds);
+	const newEnd = transformPointBetweenBounds(end, oldBounds, newBounds);
+
+	return normalizeArrowCurve(rebuildArrowFromLocalPoints(element, newStart, newControl, newEnd));
+}
+
+function getCenteredArrowBounds(bounds: ArrowBounds, handle: BoundsResizeHandle, mouse: Coordinates2D, isShiftPressed: boolean): ArrowBounds {
+	const centerX = (bounds.minX + bounds.maxX) / 2;
+	const centerY = (bounds.minY + bounds.maxY) / 2;
+	const originalHalfWidth = (bounds.maxX - bounds.minX) / 2;
+	const originalHalfHeight = (bounds.maxY - bounds.minY) / 2;
+	let halfWidth = originalHalfWidth;
+	let halfHeight = originalHalfHeight;
+
+	if (
+		handle === 'left' ||
+		handle === 'right' ||
+		handle === 'top-left' ||
+		handle === 'top-right' ||
+		handle === 'bottom-left' ||
+		handle === 'bottom-right'
+	) {
+		halfWidth = Math.abs(mouse.x - centerX);
+	}
+
+	if (
+		handle === 'top' ||
+		handle === 'bottom' ||
+		handle === 'top-left' ||
+		handle === 'top-right' ||
+		handle === 'bottom-left' ||
+		handle === 'bottom-right'
+	) {
+		halfHeight = Math.abs(mouse.y - centerY);
+	}
+
+	if (isShiftPressed && isCornerHandleForBounds(handle) && originalHalfWidth > EPSILON && originalHalfHeight > EPSILON) {
+		const widthScale = halfWidth / originalHalfWidth;
+		const heightScale = halfHeight / originalHalfHeight;
+		const scale = Math.max(widthScale, heightScale);
+
+		halfWidth = originalHalfWidth * scale;
+		halfHeight = originalHalfHeight * scale;
+	}
+
+	return {
+		minX: centerX - Math.max(halfWidth, EPSILON),
+		minY: centerY - Math.max(halfHeight, EPSILON),
+		maxX: centerX + Math.max(halfWidth, EPSILON),
+		maxY: centerY + Math.max(halfHeight, EPSILON),
+	};
+}
+
+function isCornerHandleForBounds(handle: BoundsResizeHandle): boolean {
+	return handle === 'top-left' || handle === 'top-right' || handle === 'bottom-left' || handle === 'bottom-right';
+}
+
+function resizeArrowFromBounds(element: Element, handle: BoundsResizeHandle, mouse: Coordinates2D, zoom: number): Element {
 	const oldBounds = getArrowSelectionBounds(element);
 	const center = {
 		x: element.x + element.width / 2,
@@ -62,21 +142,10 @@ function resizeArrowFromBounds(
 	const newControl = transformPointBetweenBounds(control, oldBounds, newBounds);
 	const newEnd = transformPointBetweenBounds(end, oldBounds, newBounds);
 
-	return normalizeArrowCurve(
-		rebuildArrowFromLocalPoints(
-			element,
-			newStart,
-			newControl,
-			newEnd,
-		),
-	);
+	return normalizeArrowCurve(rebuildArrowFromLocalPoints(element, newStart, newControl, newEnd));
 }
 
-function removeSelectionPadding(
-	mouse: Coordinates2D,
-	handle: BoundsResizeHandle,
-	padding: number,
-): Coordinates2D {
+function removeSelectionPadding(mouse: Coordinates2D, handle: BoundsResizeHandle, padding: number): Coordinates2D {
 	switch (handle) {
 		case 'top-left':
 			return { x: mouse.x + padding, y: mouse.y + padding };
@@ -97,11 +166,7 @@ function removeSelectionPadding(
 	}
 }
 
-function getResizedArrowBounds(
-	bounds: ArrowBounds,
-	handle: BoundsResizeHandle,
-	mouse: Coordinates2D,
-): ArrowBounds {
+function getResizedArrowBounds(bounds: ArrowBounds, handle: BoundsResizeHandle, mouse: Coordinates2D): ArrowBounds {
 	switch (handle) {
 		case 'top-left':
 			return normalizeBounds({
@@ -146,32 +211,19 @@ function normalizeBounds(bounds: ArrowBounds): ArrowBounds {
 	};
 }
 
-function transformPointBetweenBounds(
-	point: Coordinates2D,
-	oldBounds: ArrowBounds,
-	newBounds: ArrowBounds,
-): Coordinates2D {
+function transformPointBetweenBounds(point: Coordinates2D, oldBounds: ArrowBounds, newBounds: ArrowBounds): Coordinates2D {
 	const oldWidth = oldBounds.maxX - oldBounds.minX;
 	const oldHeight = oldBounds.maxY - oldBounds.minY;
 	const newWidth = newBounds.maxX - newBounds.minX;
 	const newHeight = newBounds.maxY - newBounds.minY;
 
 	return {
-		x:
-			newBounds.minX +
-			((point.x - oldBounds.minX) / oldWidth) * newWidth,
-		y:
-			newBounds.minY +
-			((point.y - oldBounds.minY) / oldHeight) * newHeight,
+		x: newBounds.minX + ((point.x - oldBounds.minX) / oldWidth) * newWidth,
+		y: newBounds.minY + ((point.y - oldBounds.minY) / oldHeight) * newHeight,
 	};
 }
 
-function rebuildArrowFromLocalPoints(
-	element: Element,
-	start: Coordinates2D,
-	control: Coordinates2D,
-	end: Coordinates2D,
-): Element {
+function rebuildArrowFromLocalPoints(element: Element, start: Coordinates2D, control: Coordinates2D, end: Coordinates2D): Element {
 	const oldCenter = {
 		x: element.x + element.width / 2,
 		y: element.y + element.height / 2,

@@ -113,6 +113,7 @@ export function useEditableWhiteboardInteractions(
 		selectedElement,
 		zoom,
 		isShiftPressed,
+		isAltPressed,
 		dispatchWhiteBoardState,
 		beginDocumentChange: history.beginDocumentChange,
 	});

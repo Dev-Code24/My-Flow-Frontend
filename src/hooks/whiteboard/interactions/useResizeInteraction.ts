@@ -1,4 +1,4 @@
-import { Dispatch, RefObject, useState } from 'react';
+import { Dispatch, RefObject, useRef, useState } from 'react';
 
 import { BoundsResizeHandle, Coordinates2D, Element, Interaction, ResizeHandle, Shape, WhiteboardAction } from '@/interfaces';
 import {
@@ -18,6 +18,7 @@ interface UseResizeInteractionParams {
 	selectedElement?: Element;
 	zoom: number;
 	isShiftPressed: boolean;
+	isAltPressed: boolean;
 	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
 	beginDocumentChange: VoidFunction;
 }
@@ -35,11 +36,13 @@ export function useResizeInteraction({
 	selectedElement,
 	zoom,
 	isShiftPressed,
+	isAltPressed,
 	dispatchWhiteBoardState,
 	beginDocumentChange,
 }: UseResizeInteractionParams): UseResizeInteractionResult {
 	const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
 	const [resizeAnchor, setResizeAnchor] = useState<Coordinates2D | null>(null);
+	const resizeStartElement = useRef<Element | null>(null);
 
 	function tryStartResize(point: Coordinates2D): boolean {
 		if (!selectedElement) return false;
@@ -49,6 +52,7 @@ export function useResizeInteraction({
 		if (!handle) return false;
 
 		beginDocumentChange();
+		resizeStartElement.current = structuredClone(selectedElement);
 		setActiveHandle(handle);
 
 		if (selectedElement.shape !== Shape.ARROW) {
@@ -69,7 +73,7 @@ export function useResizeInteraction({
 	}
 
 	function resize(point: Coordinates2D): boolean {
-		if (!selectedElement || !activeHandle) return false;
+		if (!selectedElement || !activeHandle || !resizeStartElement.current) return false;
 
 		if (selectedElement.shape === Shape.ARROW) {
 			if (activeHandle === 'start' || activeHandle === 'end' || activeHandle === 'curve') {
@@ -78,7 +82,11 @@ export function useResizeInteraction({
 			}
 
 			if (isBoundsResizeHandle(activeHandle)) {
-				resizeArrowBounds(point, activeHandle);
+				resizeArrowBounds(
+					point,
+					activeHandle,
+					resizeStartElement.current,
+				);
 				return true;
 			}
 		}
@@ -91,18 +99,41 @@ export function useResizeInteraction({
 
 		dispatchWhiteBoardState({
 			type: 'SET_ELEMENTS',
-			updater: (elements) => updateElementByHandle(elements, selectedElement.id, activeHandle, effectiveMouse, resizeAnchor, isShiftPressed),
+			updater: (elements) => updateElementByHandle(
+					elements,
+					selectedElement.id,
+					activeHandle,
+					effectiveMouse,
+					resizeAnchor,
+					isShiftPressed,
+					isAltPressed,
+					resizeStartElement.current,
+				),
 		});
 
 		return true;
 	}
 
-	function resizeArrowBounds(point: Coordinates2D, handle: BoundsResizeHandle): void {
+	function resizeArrowBounds(
+		point: Coordinates2D,
+		handle: BoundsResizeHandle,
+		startElement: Element,
+	): void {
 		if (!selectedElement) return;
 
 		dispatchWhiteBoardState({
 			type: 'SET_ELEMENTS',
-			updater: (elements) => updateArrowBoundsByHandle(elements, selectedElement.id, handle, point, zoom),
+			updater: (elements) =>
+				updateArrowBoundsByHandle(
+					elements,
+					selectedElement.id,
+					handle,
+					point,
+					zoom,
+					isAltPressed,
+					isShiftPressed,
+					startElement,
+				),
 		});
 	}
 
@@ -118,6 +149,7 @@ export function useResizeInteraction({
 	function resetResize(): void {
 		setActiveHandle(null);
 		setResizeAnchor(null);
+		resizeStartElement.current = null;
 	}
 
 	return {
