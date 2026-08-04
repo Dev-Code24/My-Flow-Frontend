@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import {Dispatch, SetStateAction, useEffect, useRef } from "react";
+import {Dispatch, SetStateAction, useEffect, useRef } from 'react';
 
-import { Coordinates2D, Element, WhiteboardAction } from "@/interfaces";
-import { loadWorkspace, saveWorkspace } from "@/lib/utils";
+import { Coordinates2D, Element, WhiteboardAction } from '@/interfaces';
+import { loadWorkspace, saveWorkspace } from '@/lib/utils';
 
 interface UseLocalWorkspaceParams {
 	elements: Element[];
@@ -36,7 +36,7 @@ export function useLocalWorkspace({
 
 		if (workspace) {
 			dispatchWhiteBoardState({
-				type: "SET_ELEMENTS",
+				type: 'SET_ELEMENTS',
 				updater: () => workspace.document.elements,
 			});
 

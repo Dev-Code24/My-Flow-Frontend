@@ -1,50 +1,28 @@
-import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, useRef, useState } from 'react';
+import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, useRef } from 'react';
 
-import { BoundsResizeHandle, Coordinates2D, Element, Interaction, MarqueeSelectionMode, PendingDrawing, ResizeHandle, Shape, Tool, WhiteboardAction, WhiteboardState } from '@/interfaces';
+import { Coordinates2D, Element, Interaction, MarqueeSelectionMode, SelectionBox, Tool, WhiteboardAction } from '@/interfaces';
 import { CursorType } from '@/constants';
 import {
-	constrainResizeToAspectRatio,
-	createDrawingElement,
 	findTopmostElementAtPosition,
 	getCanvasPoint,
-	getCursorForHandle,
 	getCursorStyle,
-	getHandleAtPosition,
-	getResizeAnchor,
-	getShapeFromTool,
-	getWhiteboardCursor,
 	getIdleWhiteboardCursor,
-	hasCrossedDrawingThreshold,
-	isBoundsResizeHandle,
-	isCornerHandle,
+	getShapeFromTool,
 	isDrawingTool,
-	isMouseOnElement,
-	updateArrowBoundsByHandle,
-	updateArrowByHandle,
-	updateDrawingElement,
-	updateElementByHandle,
+	updateEditableCursorAfterMouseUp,
+	updateEditableWhiteboardCursor,
 } from '@/utils';
 import { UseWhiteboardInteractionsResult } from './interfaces';
-
-interface PendingElementInteraction {
-	elementId: string;
-	startRawX: number;
-	startRawY: number;
-	modifierPressed: boolean;
-	wasSelected: boolean;
-}
-
-interface InteractionSnapshot {
-	elements: Element[];
-	selectedIds: string[];
-	documentRevision: number;
-}
+import { useDrawingInteraction } from './useDrawingInteraction';
+import { useElementDragInteraction } from './useElementDragInteraction';
+import { useInteractionHistory } from './useInteractionHistory';
+import { useResizeInteraction } from './useResizeInteraction';
 
 export interface EditableWhiteboardInteractionsParams {
 	elements: Element[];
 	interaction: Interaction;
 	selectedIds: string[];
-	selectionBox: WhiteboardState["selectionBox"];
+	selectionBox: SelectionBox | null;
 	tool: Tool;
 	pan: Coordinates2D;
 	zoom: number;
@@ -57,9 +35,6 @@ export interface EditableWhiteboardInteractionsParams {
 	isAltPressed?: boolean;
 }
 
-const DRAWING_DRAG_THRESHOLD = 3;
-const MOVING_DRAG_THRESHOLD = 3;
-
 const NOOP_INTERACTIONS: UseWhiteboardInteractionsResult = {
 	handleMouseDown: () => {},
 	handleMouseMove: () => {},
@@ -67,23 +42,30 @@ const NOOP_INTERACTIONS: UseWhiteboardInteractionsResult = {
 	cancelInteraction: () => {},
 };
 
-export function useEditableWhiteboardInteractions(canvasRef: RefObject<HTMLCanvasElement | null>, props: EditableWhiteboardInteractionsParams | null): UseWhiteboardInteractionsResult {
-	const pendingDrawing = useRef<PendingDrawing | null>(null);
-	const hasStartedDrawing = useRef<boolean>(false);
-	const pendingElementInteraction = useRef<PendingElementInteraction | null>(null);
-	const hasStartedMoving = useRef<boolean>(false);
-	const marqueeSelectionMode = useRef<MarqueeSelectionMode>("replace");
+const EMPTY_EDITABLE_INTERACTION_PROPS: EditableWhiteboardInteractionsParams = {
+	elements: [],
+	interaction: Interaction.IDLE,
+	selectedIds: [],
+	selectionBox: null,
+	tool: Tool.SELECT,
+	pan: { x: 0, y: 0 },
+	zoom: 1,
+	isShiftPressed: false,
+	isCtrlOrMetaPressed: false,
+	isSpacePressed: false,
+	documentRevision: 0,
+	recordSnapshot: () => {},
+	dispatchWhiteBoardState: () => {},
+	isAltPressed: false,
+};
+
+export function useEditableWhiteboardInteractions(
+	canvasRef: RefObject<HTMLCanvasElement | null>,
+	props: EditableWhiteboardInteractionsParams | null,
+): UseWhiteboardInteractionsResult {
+	const marqueeSelectionMode = useRef<MarqueeSelectionMode>('replace');
 	const selectionAtMarqueeStart = useRef<string[]>([]);
-	const interactionSnapshot = useRef<InteractionSnapshot | null>(null);
-	const lastMovePosition = useRef<Coordinates2D>({ x: 0, y: 0 });
-
-	const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
-	const [resizeAnchor, setResizeAnchor] = useState<Coordinates2D | null>(null);
-
-	if (!props) {
-		return NOOP_INTERACTIONS;
-	}
-
+	const resolvedProps = props ?? EMPTY_EDITABLE_INTERACTION_PROPS;
 	const {
 		elements,
 		interaction,
@@ -95,96 +77,52 @@ export function useEditableWhiteboardInteractions(canvasRef: RefObject<HTMLCanva
 		isShiftPressed,
 		isCtrlOrMetaPressed,
 		isSpacePressed,
-		isAltPressed = false,
-		dispatchWhiteBoardState,
 		documentRevision,
 		recordSnapshot,
-	} = props;
+		dispatchWhiteBoardState,
+		isAltPressed = false,
+	} = resolvedProps;
 
 	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
 	const selectedElement = selectedId ? elements.find((element) => element.id === selectedId) : undefined;
 
-	function beginDocumentChange(): void {
-		interactionSnapshot.current = {
-			elements: structuredClone(elements),
-			selectedIds: [...selectedIds],
-			documentRevision,
-		};
-	}
+	const history = useInteractionHistory({
+		elements,
+		selectedIds,
+		documentRevision,
+		recordSnapshot,
+		dispatchWhiteBoardState,
+	});
 
-	function commitDocumentChange(): void {
-		const snapshot = interactionSnapshot.current;
+	const drawing = useDrawingInteraction({
+		dispatchWhiteBoardState,
+		selectedId,
+		isShiftPressed,
+		beginDocumentChange: history.beginDocumentChange,
+	});
 
-		if (!snapshot) {
-			return;
-		}
+	const dragging = useElementDragInteraction({
+		selectedIds,
+		zoom,
+		dispatchWhiteBoardState,
+		beginDocumentChange: history.beginDocumentChange,
+	});
 
-		if (snapshot.documentRevision !== documentRevision) {
-			recordSnapshot(snapshot.elements);
-		}
+	const resizing = useResizeInteraction({
+		canvasRef,
+		selectedElement,
+		zoom,
+		isShiftPressed,
+		dispatchWhiteBoardState,
+		beginDocumentChange: history.beginDocumentChange,
+	});
 
-		interactionSnapshot.current = null;
-	}
-
-	function resetTransientInteractionState(): void {
-		pendingDrawing.current = null;
-		hasStartedDrawing.current = false;
-		pendingElementInteraction.current = null;
-		hasStartedMoving.current = false;
-		marqueeSelectionMode.current = "replace";
-		selectionAtMarqueeStart.current = [];
-		interactionSnapshot.current = null;
-
-		setActiveHandle(null);
-		setResizeAnchor(null);
-	}
-
-	function cancelInteraction(): void {
-		const snapshot = interactionSnapshot.current;
-		const hasPendingInteraction =
-			pendingDrawing.current !== null ||
-			pendingElementInteraction.current !== null ||
-			hasStartedDrawing.current ||
-			hasStartedMoving.current ||
-			activeHandle !== null ||
-			interaction !== Interaction.IDLE;
-
-		if (snapshot) {
-			dispatchWhiteBoardState({
-				type: "RESTORE_INTERACTION_STATE",
-				elements: snapshot.elements,
-				selectedIds: snapshot.selectedIds,
-				documentRevision: snapshot.documentRevision,
-			});
-		} else if (interaction === Interaction.SELECTING) {
-			dispatchWhiteBoardState({
-				type: "RESTORE_INTERACTION_STATE",
-				elements,
-				selectedIds: selectionAtMarqueeStart.current,
-				documentRevision,
-			});
-		} else if (hasPendingInteraction) {
-			dispatchWhiteBoardState({ type: "END_INTERACTION" });
-		} else if (selectedIds.length > 0) {
-			dispatchWhiteBoardState({ type: "CLEAR_SELECTION" });
-		}
-
-		resetTransientInteractionState();
-
-		const canvas = canvasRef.current;
-
-		if (canvas) {
-			canvas.style.cursor = getIdleWhiteboardCursor(
-				tool,
-				isSpacePressed,
-			);
-		}
+	if (!props) {
+		return NOOP_INTERACTIONS;
 	}
 
 	function handleMouseDown(event: ReactMouseEvent<HTMLCanvasElement>): void {
-		if (event.button !== 0) {
-			return;
-		}
+		if (event.button !== 0) return;
 
 		const canvas = canvasRef.current;
 
@@ -192,48 +130,40 @@ export function useEditableWhiteboardInteractions(canvasRef: RefObject<HTMLCanva
 			return;
 		}
 
-		const context = canvas.getContext("2d");
+		const context = canvas.getContext('2d');
 
 		if (!context) {
 			return;
 		}
 
-		const { x, y, rawX, rawY } = getCanvasPoint(event, canvas, pan, zoom);
-		const newElementShape = getShapeFromTool(tool);
+		const point = getCanvasPoint(event, canvas, pan, zoom);
+		const canvasPoint = { x: point.x, y: point.y };
+		const shape = getShapeFromTool(tool);
 
-		if (isDrawingTool(tool) && newElementShape) {
-			pendingDrawing.current = {
-				x,
-				y,
-				shape: newElementShape,
-			};
-			hasStartedDrawing.current = false;
+		if (isDrawingTool(tool) && shape) {
+			drawing.startDrawing(canvasPoint, shape);
 			return;
 		}
 
-		if (tryStartResize(canvas, x, y)) {
-			return;
-		}
+		if (resizing.tryStartResize(canvasPoint)) { return; }
 
-		const clickedElement = findTopmostElementAtPosition(elements, context, x, y);
+		const clickedElement = findTopmostElementAtPosition(elements, context, point.x, point.y);
 		const modifierPressed = event.ctrlKey || event.metaKey || isCtrlOrMetaPressed;
 
 		if (clickedElement) {
-			pendingElementInteraction.current = {
-				elementId: clickedElement.id,
-				startRawX: rawX,
-				startRawY: rawY,
-				modifierPressed,
-				wasSelected: selectedIds.includes(clickedElement.id),
-			};
-			hasStartedMoving.current = false;
+			dragging.prepareElementInteraction(clickedElement, { x: point.rawX, y: point.rawY }, modifierPressed);
 			return;
 		}
 
-		marqueeSelectionMode.current = modifierPressed ? "add" : "replace";
+		marqueeSelectionMode.current = modifierPressed ? 'add' : 'replace';
 		selectionAtMarqueeStart.current = [...selectedIds];
 
-		dispatchWhiteBoardState({ type: "START_SELECTION", x, y, mode: marqueeSelectionMode.current });
+		dispatchWhiteBoardState({
+			type: 'START_SELECTION',
+			x: point.x,
+			y: point.y,
+			mode: marqueeSelectionMode.current,
+		});
 	}
 
 	function handleMouseMove(event: ReactMouseEvent<HTMLCanvasElement>): void {
@@ -243,297 +173,163 @@ export function useEditableWhiteboardInteractions(canvasRef: RefObject<HTMLCanva
 			return;
 		}
 
-		const context = canvas.getContext("2d");
+		const context = canvas.getContext('2d');
 
 		if (!context) {
 			return;
 		}
 
-		const { x, y, rawX, rawY } = getCanvasPoint(event, canvas, pan, zoom);
+		const point = getCanvasPoint(event, canvas, pan, zoom);
+		const canvasPoint = { x: point.x, y: point.y };
+		const rawPoint = { x: point.rawX, y: point.rawY };
 
-		if (pendingDrawing.current) {
-			const pending = pendingDrawing.current;
-			const crossedThreshold = hasCrossedDrawingThreshold(pending, { x, y }, DRAWING_DRAG_THRESHOLD);
+		if (drawing.pendingDrawing.current) {
+			if (drawing.tryStartDrawing(canvasPoint)) return;
+		}
 
-			if (!hasStartedDrawing.current && crossedThreshold) {
-				beginDocumentChange();
+		if (dragging.pendingElementInteraction.current && !dragging.hasStartedMoving.current) {
+			const handled = dragging.tryStartMoving(rawPoint, isAltPressed, event.altKey);
 
-				const newElement = createDrawingElement(pending, { x, y }, isShiftPressed);
-
-				hasStartedDrawing.current = true;
-				dispatchWhiteBoardState({ type: "START_DRAW", element: newElement });
-				return;
-			}
-
-			if (!hasStartedDrawing.current) {
+			if (handled) {
+				if (dragging.hasStartedMoving.current) {
+					canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
+				} else {
+					updateCursor(canvas, context, canvasPoint);
+				}
 				return;
 			}
 		}
-
-		if (pendingElementInteraction.current && !hasStartedMoving.current) {
-			const pending = pendingElementInteraction.current;
-			const distance = Math.hypot(rawX - pending.startRawX, rawY - pending.startRawY);
-
-			if (distance < MOVING_DRAG_THRESHOLD) {
-				updateCursor(canvas, context, x, y);
-				return;
-			}
-
-			beginDocumentChange();
-
-			if (isAltPressed || event.altKey) {
-				const elementIdsToDuplicate = getElementIdsForDrag(pending);
-
-				dispatchWhiteBoardState({ type: "DUPLICATE_SELECTED", elementIds: elementIdsToDuplicate });
-			} else if (!pending.wasSelected) {
-				dispatchWhiteBoardState({
-					type: "SELECT_ELEMENT",
-					id: pending.elementId,
-					mode: pending.modifierPressed ? "add" : "replace",
-				});
-			}
-
-			hasStartedMoving.current = true;
-			lastMovePosition.current = { x: rawX, y: rawY };
-
-			dispatchWhiteBoardState({
-				type: "SET_INTERACTION",
-				interaction: Interaction.MOVING,
-			});
-
-			canvas.style.cursor = getCursorStyle(CursorType.GRABBING);
-			return;
-		}
-
-		updateCursor(canvas, context, x, y);
 
 		if (interaction === Interaction.SELECTING && selectionBox) {
 			dispatchWhiteBoardState({
-				type: "UPDATE_SELECTION",
-				x,
-				y,
+				type: 'UPDATE_SELECTION',
+				x: point.x,
+				y: point.y,
 				mode: marqueeSelectionMode.current,
 				baseSelectedIds: selectionAtMarqueeStart.current,
 			});
 			return;
 		}
 
-		if (interaction === Interaction.MOVING && selectedIds.length > 0) {
-			handleMoving(rawX, rawY);
+		if (interaction === Interaction.MOVING && dragging.moveSelected(rawPoint)) {
 			return;
 		}
 
-		if (interaction === Interaction.DRAWING && isDrawingTool(tool)) {
-			handleDrawing(x, y);
+		if (interaction === Interaction.DRAWING && drawing.updateDrawing(canvasPoint)) {
 			return;
 		}
 
-		if (interaction === Interaction.RESIZING && selectedIds.length === 1) {
-			handleResizing(x, y);
+		if (interaction === Interaction.RESIZING && selectedIds.length === 1 && resizing.resize(canvasPoint)) {
+			return;
 		}
+
+		updateCursor(canvas, context, canvasPoint);
 	}
 
 	function handleMouseUp(event: ReactMouseEvent<HTMLCanvasElement>): void {
-		const completedDrawing = hasStartedDrawing.current;
-		const completedMoving = hasStartedMoving.current;
+		const completedDrawing = drawing.hasStartedDrawing.current;
+		const completedMoving = dragging.hasStartedMoving.current;
 		const completedInteraction = interaction;
-		const pendingElement = pendingElementInteraction.current;
 
-		if (pendingElement && !completedMoving) {
-			if (pendingElement.modifierPressed) {
-				dispatchWhiteBoardState({
-					type: "SELECT_ELEMENT",
-					id: pendingElement.elementId,
-					mode: "toggle",
-				});
-			} else if (!pendingElement.wasSelected) {
-				dispatchWhiteBoardState({
-					type: "SELECT_ELEMENT",
-					id: pendingElement.elementId,
-					mode: "replace",
-				});
-			}
-		}
+		dragging.applyPendingClickSelection();
 
-		pendingDrawing.current = null;
-		hasStartedDrawing.current = false;
-		pendingElementInteraction.current = null;
-		hasStartedMoving.current = false;
-		marqueeSelectionMode.current = "replace";
-		selectionAtMarqueeStart.current = [];
+		drawing.resetDrawing();
+		dragging.resetElementInteraction();
+		resizing.resetResize();
+		resetMarqueeState();
 
-		setActiveHandle(null);
-		setResizeAnchor(null);
-
-		dispatchWhiteBoardState({ type: "END_INTERACTION" });
+		dispatchWhiteBoardState({ type: 'END_INTERACTION' });
 
 		const canvas = canvasRef.current;
 
 		if (canvas) {
+			const context = canvas.getContext('2d');
+
+			if (!context) {
+				history.commitDocumentChange();
+				return;
+			}
+
 			if (completedMoving || completedInteraction === Interaction.MOVING) {
 				canvas.style.cursor = getCursorStyle(CursorType.GRAB);
 			} else {
-				updateCursorAfterMouseUp(canvas, event);
+				const point = getCanvasPoint(event, canvas, pan, zoom);
+
+				updateEditableCursorAfterMouseUp(
+					canvas,
+					context,
+					{ x: point.x, y: point.y },
+					{
+						elements,
+						selectedElement,
+						tool,
+						isSpacePressed,
+						zoom,
+					},
+				);
 			}
 		}
 
 		if (completedDrawing || completedInteraction !== Interaction.DRAWING) {
-			dispatchWhiteBoardState({ type: "NORMALIZE_ELEMENTS" });
+			dispatchWhiteBoardState({
+				type: 'NORMALIZE_ELEMENTS',
+			});
 		}
 
-		commitDocumentChange();
+		history.commitDocumentChange();
 	}
 
-	function tryStartResize(canvas: HTMLCanvasElement, x: number, y: number): boolean {
-		if (!selectedElement) {
-			return false;
+	function cancelInteraction(): void {
+		const hasPendingInteraction =
+			drawing.pendingDrawing.current !== null ||
+			dragging.pendingElementInteraction.current !== null ||
+			drawing.hasStartedDrawing.current ||
+			dragging.hasStartedMoving.current ||
+			resizing.hasActiveResize ||
+			interaction !== Interaction.IDLE;
+
+		if (history.snapshotRef.current) {
+			history.restoreDocumentChange();
+		} else if (interaction === Interaction.SELECTING) {
+			dispatchWhiteBoardState({
+				type: 'RESTORE_INTERACTION_STATE',
+				elements,
+				selectedIds: selectionAtMarqueeStart.current,
+				documentRevision,
+			});
+		} else if (hasPendingInteraction) {
+			dispatchWhiteBoardState({ type: 'END_INTERACTION' });
+		} else if (selectedIds.length > 0) {
+			dispatchWhiteBoardState({ type: 'CLEAR_SELECTION' });
 		}
 
-		const handle = getHandleAtPosition(x, y, selectedElement, zoom);
+		drawing.resetDrawing();
+		dragging.resetElementInteraction();
+		resizing.resetResize();
+		resetMarqueeState();
+		history.clearDocumentChange();
 
-		if (!handle) {
-			return false;
+		const canvas = canvasRef.current;
+		if (canvas) {
+			canvas.style.cursor = getIdleWhiteboardCursor(tool, isSpacePressed);
 		}
-
-		beginDocumentChange();
-		setActiveHandle(handle);
-
-		if (selectedElement.shape !== Shape.ARROW) {
-			setResizeAnchor(getResizeAnchor(selectedElement, handle));
-		}
-
-		dispatchWhiteBoardState({ type: "SET_INTERACTION", interaction: Interaction.RESIZING });
-
-		canvas.style.cursor = getCursorForHandle(selectedElement.angle, handle);
-		return true;
 	}
 
-	function getElementIdsForDrag(pending: PendingElementInteraction): string[] {
-		if (pending.wasSelected) {
-			return selectedIds;
-		}
-
-		if (pending.modifierPressed) {
-			return Array.from(new Set([...selectedIds, pending.elementId]));
-		}
-
-		return [pending.elementId];
-	}
-
-	function handleMoving(rawX: number, rawY: number): void {
-		const dx = (rawX - lastMovePosition.current.x) / zoom;
-		const dy = (rawY - lastMovePosition.current.y) / zoom;
-
-		dispatchWhiteBoardState({
-			type: "MOVE_SELECTED",
-			dx,
-			dy,
-		});
-
-		lastMovePosition.current = { x: rawX, y: rawY };
-	}
-
-	function handleDrawing(x: number, y: number): void {
-		if (!selectedId) {
-			return;
-		}
-
-		dispatchWhiteBoardState({
-			type: "SET_ELEMENTS",
-			updater: (currentElements) => updateDrawingElement(currentElements, selectedId, { x, y }, isShiftPressed),
-		});
-	}
-
-	function handleResizing(x: number, y: number): void {
-		if (!selectedElement || !activeHandle) {
-			return;
-		}
-
-		if (selectedElement.shape === Shape.ARROW) {
-			if (activeHandle === "start" || activeHandle === "end" || activeHandle === "curve") {
-				handleArrowResizing(x, y, activeHandle);
-				return;
-			}
-
-			if (isBoundsResizeHandle(activeHandle)) {
-				handleArrowBoundsResizing(x, y, activeHandle);
-				return;
-			}
-		}
-
-		let effectiveMouse: Coordinates2D = { x, y };
-
-		if (isShiftPressed && resizeAnchor && isCornerHandle(activeHandle)) {
-			effectiveMouse = constrainResizeToAspectRatio(selectedElement, x, y, resizeAnchor);
-		}
-
-		dispatchWhiteBoardState({
-			type: "SET_ELEMENTS",
-			updater: (currentElements) => updateElementByHandle(currentElements, selectedElement.id, activeHandle, effectiveMouse, resizeAnchor),
-		});
-	}
-
-	function handleArrowBoundsResizing(x: number, y: number, handle: BoundsResizeHandle): void {
-		if (!selectedElement) {
-			return;
-		}
-
-		dispatchWhiteBoardState({
-			type: "SET_ELEMENTS",
-			updater: (currentElements) => updateArrowBoundsByHandle(currentElements, selectedElement.id, handle, { x, y }, zoom),
-		});
-	}
-
-	function handleArrowResizing(x: number, y: number, handle: "start" | "end" | "curve"): void {
-		if (!selectedElement) {
-			return;
-		}
-
-		dispatchWhiteBoardState({
-			type: "SET_ELEMENTS",
-			updater: (currentElements) => updateArrowByHandle(currentElements, selectedElement.id, handle, { x, y }),
-		});
-	}
-
-	function updateCursor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, x: number, y: number): void {
-		const isHoveringElement = elements.some((element) => isMouseOnElement(x, y, element, context));
-		let hoveredHandle: ResizeHandle = null;
-
-		if (selectedElement && tool === Tool.SELECT && !isSpacePressed && interaction !== Interaction.MOVING && interaction !== Interaction.RESIZING) {
-			hoveredHandle = getHandleAtPosition(x, y, selectedElement, zoom);
-		}
-
-		canvas.style.cursor = getWhiteboardCursor({
+	function updateCursor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, point: Coordinates2D): void {
+		updateEditableWhiteboardCursor(canvas, context, point, {
+			elements,
+			selectedElement,
 			tool,
 			interaction,
 			isSpacePressed,
-			isHoveringElement,
-			activeHandle,
-			hoveredHandle,
-			selectedElement,
+			activeHandle: resizing.activeHandle,
+			zoom,
 		});
 	}
 
-	function updateCursorAfterMouseUp(canvas: HTMLCanvasElement, event: ReactMouseEvent<HTMLCanvasElement>): void {
-		const context = canvas.getContext("2d");
-
-		if (!context) {
-			return;
-		}
-
-		const { x, y } = getCanvasPoint(event, canvas, pan, zoom);
-		const hoveredHandle = selectedElement && tool === Tool.SELECT && !isSpacePressed ? getHandleAtPosition(x, y, selectedElement, zoom) : null;
-		const isHoveringElement = elements.some((element) => isMouseOnElement(x, y, element, context));
-
-		canvas.style.cursor = getWhiteboardCursor({
-			tool,
-			interaction: Interaction.IDLE,
-			isSpacePressed,
-			isHoveringElement,
-			activeHandle: null,
-			hoveredHandle,
-			selectedElement,
-		});
+	function resetMarqueeState(): void {
+		marqueeSelectionMode.current = 'replace';
+		selectionAtMarqueeStart.current = [];
 	}
 
 	return {

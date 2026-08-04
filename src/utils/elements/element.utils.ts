@@ -1,5 +1,5 @@
-import { MIN_SHAPE_SIZE } from "@/constants";
-import { Coordinates2D, Element, PendingDrawing, Shape, Tool } from "@/interfaces";
+import { ANGLE_SNAP_INCREMENT, MIN_SHAPE_SIZE } from '@/constants';
+import { Coordinates2D, Element, PendingDrawing, Shape, Tool } from '@/interfaces';
 
 export function isElementInSelection(el: Element, box: { x1: number; y1: number; x2: number; y2: number }): boolean {
 	const minX = Math.min(box.x1, box.x2);
@@ -78,10 +78,41 @@ export function getDrawingDimensions(
 	height: number;
 } {
 	if (shape === Shape.ARROW) {
-		return { width: dx, height: dy };
+		if (!isShiftPressed) {
+			return { width: dx, height: dy };
+		}
+
+		return getSnappedArrowDimensions(dx, dy);
 	}
 
 	return getInitialDrawingDimensions(dx, dy, isShiftPressed);
+}
+
+function getSnappedArrowDimensions(
+	dx: number,
+	dy: number,
+): {
+	width: number;
+	height: number;
+} {
+	const length = Math.hypot(dx, dy);
+
+	if (length === 0) {
+		return {
+			width: 0,
+			height: 0,
+		};
+	}
+
+	const rawAngle = Math.atan2(dy, dx);
+	const snappedAngle =
+		Math.round(rawAngle / ANGLE_SNAP_INCREMENT) *
+		ANGLE_SNAP_INCREMENT;
+
+	return {
+		width: length * Math.cos(snappedAngle),
+		height: length * Math.sin(snappedAngle),
+	};
 }
 
 export function getInitialDrawingDimensions(

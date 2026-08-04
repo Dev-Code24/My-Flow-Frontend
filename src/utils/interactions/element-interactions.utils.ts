@@ -138,14 +138,15 @@ export function updateElementPropertiesUsingHandles(
 	mouseX: number,
 	mouseY: number,
 	anchor: { x: number; y: number } | null,
+	isShiftPressed: boolean,
 ): Element {
 	if (activeHandle === 'rotation') {
-		return updateRotation(el, mouseX, mouseY);
+		return updateRotation(el, mouseX, mouseY, isShiftPressed);
 	}
 
 	if (el.shape === Shape.ARROW) {
 		if (activeHandle === 'start' || activeHandle === 'end') {
-			return updateStraightArrowEndpoint(el, activeHandle, mouseX, mouseY);
+			return updateStraightArrowEndpoint(el, activeHandle, mouseX, mouseY, isShiftPressed);
 		}
 
 		if (activeHandle === 'curve') {
@@ -202,10 +203,19 @@ export function updateElementPropertiesUsingHandles(
 	};
 }
 
-export function updateRotation(el: Element, mouseX: number, mouseY: number): Element {
+export function updateRotation(
+	el: Element,
+	mouseX: number,
+	mouseY: number,
+	isShiftPressed: boolean,
+): Element {
 	const centerX = el.x + el.width / 2;
 	const centerY = el.y + el.height / 2;
-	const angle = Math.atan2(mouseY - centerY, mouseX - centerX) + Math.PI / 2;
+	const rawAngle = Math.atan2(mouseY - centerY, mouseX - centerX) + Math.PI / 2;
+	const rotationSnapIncrement = Math.PI / 12;
+	const angle = isShiftPressed
+		? Math.round(rawAngle / rotationSnapIncrement) * rotationSnapIncrement
+		: rawAngle;
 
 	return { ...el, angle };
 }
@@ -216,13 +226,21 @@ export function updateElementByHandle(
 	activeHandle: ResizeHandle,
 	mouse: Coordinates2D,
 	resizeAnchor: Coordinates2D | null,
+	isShiftPressed: boolean,
 ): Element[] {
 	return elements.map((element) => {
 		if (element.id !== elementId) {
 			return element;
 		}
 
-		return updateElementPropertiesUsingHandles(activeHandle, element, mouse.x, mouse.y, resizeAnchor);
+		return updateElementPropertiesUsingHandles(
+			activeHandle,
+			element,
+			mouse.x,
+			mouse.y,
+			resizeAnchor,
+			isShiftPressed,
+		);
 	});
 }
 

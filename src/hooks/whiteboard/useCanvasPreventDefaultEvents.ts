@@ -1,4 +1,4 @@
-import { RefObject, useEffect } from "react";
+import { RefObject, useEffect } from 'react';
 
 interface useCanvasPreventDefaultEvents {
 	canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -20,12 +20,12 @@ export function useCanvasPreventDefaultEvents({ canvasRef }: useCanvasPreventDef
 			}
 		}
 
-		canvas.addEventListener("wheel", preventDefault, { passive: false });
-		canvas.addEventListener("mousedown", preventDefault, { passive: false });
+		canvas.addEventListener('wheel', preventDefault, { passive: false });
+		canvas.addEventListener('mousedown', preventDefault, { passive: false });
 
 		return () => {
-			canvas.removeEventListener( "wheel", preventDefault);
-			canvas.removeEventListener("mousedown", preventDefault);
+			canvas.removeEventListener( 'wheel', preventDefault);
+			canvas.removeEventListener('mousedown', preventDefault);
 		};
 	}, [canvasRef]);
 }
