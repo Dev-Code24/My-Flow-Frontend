@@ -6,7 +6,6 @@ export function useKeyboardShortcuts(props: UseKeyboardShortcutsProps): void {
 	useCommonKeyboardShortcuts({
 		canvasRef: props.canvasRef,
 		setIsSpacePressed: props.setIsSpacePressed,
-		// setIsShiftPressed: props.setIsShiftPressed,
 		cancelInteraction: props.cancelInteraction,
 	});
 

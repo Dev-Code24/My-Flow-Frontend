@@ -20,8 +20,18 @@ export interface RoomData {
 
 export type CreateRoomResponseData = RoomData;
 
-export type JoinRoomResponseData = RoomData;
+export enum RoomRole {
+	CREATOR = 'CREATOR',
+	JOINER = 'JOINER',
+}
+
+export interface JoinRoomResponseData {
+	wsToken: string;
+	participantId: string;
+	displayName: string;
+	role: RoomRole;
+}
 
 export interface JoinRoomRequest {
-	name: string;
+	name: string | null;
 }

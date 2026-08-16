@@ -17,7 +17,7 @@ export function useEditingKeyboardShortcuts(editing: EditingKeyboardShortcutsPro
       const handleKeyDown = (event: KeyboardEvent): void => {
          setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);
 
-         if (event.repeat) {
+         if (event.repeat || !event.key) {
             return;
          }
 
@@ -88,6 +88,8 @@ export function useEditingKeyboardShortcuts(editing: EditingKeyboardShortcutsPro
       };
 
       const handleKeyUp = (event: KeyboardEvent): void => {
+         if (!event.key) { return; }
+
          const key = event.key.toLowerCase();
 
          setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);

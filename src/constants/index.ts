@@ -41,3 +41,5 @@ export const initialWhiteBoardState: WhiteboardState = {
 
 export * from './zoom.constants';
 export * from './arrows.constants';
+export * from './yjs.constants';
+export * from './room.constants';
