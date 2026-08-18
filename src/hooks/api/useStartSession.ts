@@ -7,6 +7,7 @@ import { createRoom, joinRoom } from '@/lib/api/rooms';
 import { RoomDuration } from '@/lib/interfaces';
 import { toast } from '@/ui/toast/toast.service';
 import { RoomCollaborationOptions } from "@/interfaces";
+import { ApiError } from "@/lib/errors";
 
 interface UseStartSessionResult {
   startSession: (options: RoomCollaborationOptions) => Promise<void>;
@@ -33,8 +34,15 @@ export function useStartSession(): UseStartSessionResult {
          console.log({ role, participantId, resolvedDisplayName, wsToken });
          router.push(`/room/${roomId}`);
       } catch (error) {
-         console.error('Failed to start collaboration session:', error);
-         toast.error(`We couldn't start the collaboration session. Please try again.`);
+         let message: string;
+
+         if (error instanceof ApiError) {
+            message = error.message;
+         } else {
+            message = 'Failed to start collaboration session';
+         }
+         console.error(message, error);
+         toast.error(message);
       } finally {
          setIsStartingSession(false);
       }
