@@ -1,5 +1,5 @@
 import { FlowDocumentData, LocalWorkspace } from '@/lib/interfaces';
-import { LOCAL_STORAGE_KEY } from '../constants';
+import { LOCAL_STORAGE_CONSTANTS } from '../constants';
 
 const WORKSPACE_VERSION = 1;
 
@@ -11,13 +11,13 @@ export function saveWorkspace(document: FlowDocumentData): void {
 	};
 
 	localStorage.setItem(
-		LOCAL_STORAGE_KEY.WORKSPACE,
+		LOCAL_STORAGE_CONSTANTS.WORKSPACE,
 		JSON.stringify(workspace)
 	);
 }
 
 export function loadWorkspace(): LocalWorkspace | null {
-	const storedWorkspace = localStorage.getItem(LOCAL_STORAGE_KEY.WORKSPACE);
+	const storedWorkspace = localStorage.getItem(LOCAL_STORAGE_CONSTANTS.WORKSPACE);
 
 	if (!storedWorkspace) {
 		return null;
@@ -37,7 +37,7 @@ export function loadWorkspace(): LocalWorkspace | null {
 }
 
 export function clearWorkspace(): void {
-	localStorage.removeItem(LOCAL_STORAGE_KEY.WORKSPACE);
+	localStorage.removeItem(LOCAL_STORAGE_CONSTANTS.WORKSPACE);
 }
 
 function isValidWorkspace(value: unknown): value is LocalWorkspace {

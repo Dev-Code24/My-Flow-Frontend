@@ -16,7 +16,7 @@ export enum KeyboardKeys {
 };
 
 export enum CursorType {
-   POINTER = 'pointer',
+  POINTER = 'pointer',
 	TEXT = 'text',
 	NOT_ALLOWED = 'not-allowed',
 	DEFAULT = 'default',
