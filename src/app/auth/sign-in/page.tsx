@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Racing_Sans_One } from 'next/font/google';
-import { EyeClosed as EyeClosedIcon, Eye as EyeOpenIcon, LoaderCircle } from 'lucide-react';
+import { EyeClosed as EyeClosedIcon, Eye as EyeOpenIcon, LoaderCircle, ArrowLeft } from 'lucide-react';
 
 import { BGAnimation } from '@/components';
 import Form from '@/ui/forms';
@@ -78,6 +78,15 @@ export default function SignIn() {
       <div className='flex h-full w-full items-center justify-center p-4 lg:w-[50%] lg:p-6'>
         <div className='container__form flex h-full w-full items-center justify-center rounded-xl bg-white p-6 text-slate-800'>
           <div className='max:h-120 max-w-104 lg:my-auto lg:w-104'>
+            <Button
+              href='/'
+              variant='ghost'
+              className='mb-4 gap-2 px-2'
+            >
+              <ArrowLeft size={18} />
+              Back to whiteboard
+            </Button>
+
             <div className='flex items-center lg:hidden'>
               <div
                 className={`${racingsSans.className} text-[1.35rem] md:text-5xl`}
