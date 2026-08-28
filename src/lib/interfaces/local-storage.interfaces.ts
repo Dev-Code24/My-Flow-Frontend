@@ -1,4 +1,4 @@
-import { FlowDocumentData } from './share.api.interfaces';
+import { FlowDocumentData } from './share-api.interfaces';
 
 export interface LocalWorkspace {
 	version: number;

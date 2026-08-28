@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MyFlow
 
-## Getting Started
+<p align="center">
+  <img width="1680" height="1050" alt="Screenshot 2026-08-19 at 10 16 03 AM" src="https://github.com/user-attachments/assets/ecd0e90a-dcdb-4086-a212-602e550b1267" />
+</p>
 
-First, run the development server:
+<p align="center">
+  <strong>A local-first collaborative whiteboard built with Next.js, React, TypeScript, and Yjs.</strong>
+</p>
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+MyFlow is an interactive whiteboard for creating visual flows, sharing them through links, and collaborating with other users in real time.
+
+The frontend is designed around one main principle: **keep whiteboard interactions, UI state, persistence, and collaboration independent from each other.**
+
+---
+
+## High-Level Design
+
+```mermaid
+flowchart LR
+    U[User] --> APP[Next.js Application]
+    APP --> WB[Whiteboard Engine]
+    WB --> CANVAS[Canvas Renderer]
+
+    APP --> STORE[Local Workspace]
+    APP --> API[REST API]
+
+    WB --> YJS[Yjs Document]
+    YJS --> WS[WebSocket Service]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### What each layer does
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Next.js Application** — routing, room flows, shared-flow pages, modals, toasts, and API integration.
+- **Whiteboard Engine** — drawing, selection, movement, resizing, rotation, panning, zooming, hit testing, and geometry.
+- **Local Workspace** — keeps the user's editable workspace available locally.
+- **REST API** — handles room creation/joining and snapshot-sharing workflows.
+- **Yjs + WebSocket** — synchronizes collaborative document changes between room participants.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Whiteboard Architecture
 
-To learn more about Next.js, take a look at the following resources:
+The editor is split into focused interaction logic instead of putting every mouse and keyboard behavior inside one large canvas component.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+Pointer / Keyboard Input
+          ↓
+   Interaction Logic
+          ↓
+   Whiteboard State
+          ↓
+    Canvas Renderer
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The interaction layer handles features such as:
 
-## Deploy on Vercel
+- drawing shapes
+- selecting and moving elements
+- resizing and rotating elements
+- modifier-key resize behavior
+- selection boxes
+- panning and zooming
+- element and handle hit testing
+- canvas coordinate conversion
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Geometry-heavy operations are kept in utilities so rendering code stays focused on rendering.

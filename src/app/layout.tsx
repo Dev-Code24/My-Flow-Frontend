@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Fira_Sans } from 'next/font/google';
 import './globals.css';
 import Toast from '@/ui/toast/Toast';
+import { AuthProvider } from '@/context';
 
 const fira_sans = Fira_Sans({
   variable: '--font-fira-sans',
@@ -25,8 +26,10 @@ export default function RootLayout({
       lang='en'
       className={`${fira_sans.variable} h-full antialiased`}>
       <body suppressHydrationWarning className='min-h-full'>
-        {children}
-        <Toast />
+        <AuthProvider>
+          {children}
+          <Toast />
+        </AuthProvider>
       </body>
     </html>
   );
