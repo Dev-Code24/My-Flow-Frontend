@@ -57,10 +57,21 @@ a,
     cursor: var(--cursor-pointer);
 }
 
-input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
 textarea,
 [contenteditable="true"] {
     cursor: var(--cursor-text);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    cursor: var(--cursor-pointer);
 }
 
 button:disabled,
