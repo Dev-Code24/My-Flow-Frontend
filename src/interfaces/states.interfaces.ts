@@ -1,12 +1,5 @@
 import { Interaction } from './interactions.interfaces';
-import { Element, Tool } from './whiteboard.interfaces';
-
-export interface SelectionBox {
-   x1: number;
-   y1: number;
-   x2: number;
-   y2: number;
-}
+import { Element, SelectionBox, Tool } from './whiteboard.interfaces';
 
 export interface WhiteboardState {
    elements: Element[];
