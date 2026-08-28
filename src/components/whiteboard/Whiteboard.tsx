@@ -93,7 +93,11 @@ export default function Whiteboard({
 			onWheel={onWheel}
 		/>
 
-		{topRightAction}
+		{topRightAction && (
+			<div className='absolute right-6 top-6 z-20'>
+				{topRightAction}
+			</div>
+		)}
 		</div>
 	);
 }

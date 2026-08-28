@@ -2,7 +2,7 @@
 
 import { useReducer, useRef, useState } from 'react';
 import Whiteboard from '@/components/whiteboard';
-import { HistoryControls, ShapesNavbar, ShareModal } from '@/components';
+import { EditableTopRightAction, HistoryControls, ShapesNavbar } from '@/components';
 
 import { useKeyboardShortcuts, useWhiteboardViewport, useWhiteboardInteractions, useWhiteboardCursor, useCanvasPreventDefaultEvents, useWhiteboardHistory } from '@/hooks/whiteboard';
 import { useStartSession, useExportFlow } from '@/hooks/api';
@@ -102,7 +102,7 @@ export default function Home() {
 			onBackToContent={backToContent}
 			toolbar={<ShapesNavbar tool={tool} dispatchWhiteBoardState={dispatchWhiteBoardState} setIsSpacePressed={setIsSpacePressed} />}
 			topRightAction={
-				<ShareModal
+				<EditableTopRightAction
 					onStartSession={startSession}
 					onExportToLink={handleExportToLink}
 					isStartingSession={isStartingSession}

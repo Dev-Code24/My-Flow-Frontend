@@ -1,4 +1,5 @@
-import { Interaction, Tool, Element } from '.';
+import { Interaction } from './interactions.interfaces';
+import { Element, Tool } from './whiteboard.interfaces';
 
 export interface SelectionBox {
    x1: number;
