@@ -3,7 +3,7 @@
 import { useCallback, useReducer, useRef, useState } from 'react';
 
 import Whiteboard from '@/components/whiteboard';
-import { EditSharedFlowButton } from '@/components';
+import { ReadonlyTopRightAction } from '@/components';
 
 import { useSharedFlow } from '@/hooks/api';
 import { Element, Interaction, WhiteboardAction, WhiteboardMode, WhiteboardState } from '@/interfaces';
@@ -37,7 +37,7 @@ export default function SharedFlowPage() {
 		pan,
 		zoom,
 		showBackToContent,
-      setPan,
+		setPan,
 		setCanvasSize,
 		handleWheel,
 		zoomIn,
@@ -133,7 +133,7 @@ export default function SharedFlowPage() {
 					</h1>
 
 					<p className='mt-2 text-sm text-text-secondary'>
-                  This shared flow is unavailable.
+						This shared flow is unavailable.
 					</p>
 				</div>
 			</div>
@@ -160,13 +160,7 @@ export default function SharedFlowPage() {
 				onZoomOut={zoomOut}
 				onResetZoom={resetZoom}
 				onBackToContent={backToContent}
-				topRightAction={
-					<EditSharedFlowButton
-						onClick={() => {
-							setIsImportModalOpen((prev) => !prev);
-						}}
-					/>
-				}
+				topRightAction={ <ReadonlyTopRightAction onEdit={() => setIsImportModalOpen(true)} /> }
 			/>
 
 			<ConfirmModal

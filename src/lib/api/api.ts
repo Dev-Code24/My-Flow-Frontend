@@ -30,6 +30,7 @@ async function request<T>(
         signal: signal ? AbortSignal.any([ signal, timeoutController.signal ]) : timeoutController.signal,
         headers: createRequestHeaders(headers, body),
         body: serializeBody(body),
+        credentials: 'include',
       }
     );
 

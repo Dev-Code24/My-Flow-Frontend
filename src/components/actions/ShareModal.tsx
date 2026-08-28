@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link2, LoaderCircle, Play, Share2 } from 'lucide-react';
 
 import Modal from '@/ui/modal';
+import Button from '@/ui/button';
 
 interface ShareModalProps {
   onStartSession: () => Promise<void>;
@@ -48,14 +49,15 @@ export default function ShareModal({
 
   return (
     <>
-      <button
+      <Button
         type='button'
+        variant='contained'
         onClick={() => setIsOpen(true)}
-        className='absolute right-6 top-6 z-20 flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-md transition-colors hover:bg-primary-hover'
+        className='h-10 gap-2 font-semibold shadow-md'
       >
         <Share2 size={18} strokeWidth={2} />
         Share
-      </button>
+      </Button>
 
       <Modal
         isOpen={isOpen}
@@ -77,11 +79,12 @@ export default function ShareModal({
             private. Not even our server can see what you draw.
           </p>
 
-          <button
+          <Button
             type='button'
+            variant='contained'
             onClick={handleStartSession}
             disabled={isLoading}
-            className='mx-auto mt-6 flex min-h-12 items-center justify-center gap-3 rounded-lg bg-primary px-7 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60'
+            className='mx-auto mt-6 min-h-12 gap-3 px-7 font-semibold'
           >
             {isStartingSession ? (
               <LoaderCircle
@@ -94,16 +97,14 @@ export default function ShareModal({
             )}
 
             {isStartingSession ? 'Starting' : 'Start session'}
-          </button>
+          </Button>
         </section>
 
         <div className='my-9 flex items-center gap-4'>
           <div className='h-px flex-1 bg-border' />
-
           <span className='text-sm text-text-primary'>
             Or
           </span>
-
           <div className='h-px flex-1 bg-border' />
         </div>
 
@@ -116,11 +117,12 @@ export default function ShareModal({
             Export as a read-only link.
           </p>
 
-          <button
+          <Button
             type='button'
+            variant='contained'
             onClick={handleExportToLink}
             disabled={isLoading}
-            className='mx-auto mt-6 flex min-h-12 items-center justify-center gap-3 rounded-lg bg-primary px-7 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60'
+            className='mx-auto mt-6 min-h-12 gap-3 px-7 font-semibold'
           >
             {isExporting ? (
               <LoaderCircle
@@ -133,7 +135,7 @@ export default function ShareModal({
             )}
 
             {isExporting ? 'Exporting' : 'Export to Link'}
-          </button>
+          </Button>
         </section>
       </Modal>
     </>
