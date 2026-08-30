@@ -7,11 +7,11 @@ import Dropdown from '@/ui/dropdown';
 import { RoomDuration } from '@/lib/interfaces';
 import { ROOM_DURATION_OPTIONS } from '@/constants';
 import { RoomCollaborationOptions } from '@/interfaces';
+import { useAuth } from "@/hooks/auth";
 
 interface StartCollaborationModalProps {
   isOpen: boolean;
   isSubmitting?: boolean;
-  isAuthenticated: boolean;
   onCancel: () => void;
   onSubmit: (options: RoomCollaborationOptions) => void | Promise<void>;
 }
@@ -19,10 +19,10 @@ interface StartCollaborationModalProps {
 export default function StartCollaborationModal({
   isOpen,
   isSubmitting = false,
-  isAuthenticated,
   onCancel,
   onSubmit,
 }: StartCollaborationModalProps) {
+  const { isAuthenticated, user } = useAuth();
   const [displayName, setDisplayName] = useState<string>('');
   const [duration, setDuration] = useState<RoomDuration>(RoomDuration.ONE_HOUR);
 
@@ -32,7 +32,7 @@ export default function StartCollaborationModal({
   async function handleSubmit(): Promise<void> {
     if (!isDisplayNameValid || isSubmitting) { return; }
 
-    await onSubmit({ displayName: isAuthenticated ? undefined : trimmedName, duration });
+    await onSubmit({ displayName: isAuthenticated ? user.name : trimmedName, duration });
     setDisplayName('');
     setDuration(RoomDuration.ONE_HOUR);
   }
@@ -55,9 +55,9 @@ export default function StartCollaborationModal({
           Set up your collaboration session.
         </p>
 
-        <div className='pt-5 flex gap-5'>
+        <div className='flex gap-5 pt-5'>
           {!isAuthenticated && (
-            <div className='flex flex-col gap-2'>
+            <div className='flex w-[20rem] flex-col gap-2'>
               <label
                 htmlFor='collaboration-display-name'
                 className='text-sm font-medium text-text-primary'
@@ -82,7 +82,7 @@ export default function StartCollaborationModal({
                     void handleSubmit();
                   }
                 }}
-                className='w-[20rem] rounded-lg border border-border px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-primary disabled:opacity-60'
+                className='w-full rounded-lg border border-border px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-primary disabled:opacity-60'
               />
             </div>
           )}
@@ -93,7 +93,7 @@ export default function StartCollaborationModal({
             options={ROOM_DURATION_OPTIONS}
             onChange={setDuration}
             disabled={isSubmitting}
-            className='w-32'
+            className='flex-1'
           />
         </div>
 

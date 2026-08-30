@@ -13,7 +13,6 @@ interface ShareModalProps {
   onExportToLink: () => Promise<void>;
   isStartingSession: boolean;
   isExporting: boolean;
-  isAuthenticated: boolean;
 }
 
 export default function ShareModal({
@@ -21,7 +20,6 @@ export default function ShareModal({
   onExportToLink,
   isStartingSession,
   isExporting,
-  isAuthenticated = false,
 }: ShareModalProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isStartCollaborationModalOpen, setIsStartCollaborationModalOpen] = useState<boolean>(false);
@@ -168,7 +166,6 @@ export default function ShareModal({
       <StartCollaborationModal
         isOpen={isStartCollaborationModalOpen}
         isSubmitting={isStartingSession}
-        isAuthenticated={isAuthenticated}
         onCancel={handleStartCollaborationModalClose}
         onSubmit={handleCollaborationStart}
       />

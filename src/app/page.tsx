@@ -116,7 +116,6 @@ export default function Home() {
 					onStartSession={handleStartSession}
 					onExportToLink={handleExportToLink}
 					isStartingSession={isStartingSession}
-					isAuthenticated={false}
 					isExporting={isExporting}
 				/>
 			}

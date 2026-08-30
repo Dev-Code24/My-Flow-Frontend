@@ -78,6 +78,14 @@ export type WhiteboardAction =
    }
    | {
       type: 'DELETE_SELECTED';
+   }
+   | {
+      type: 'SYNC_DOCUMENT_ELEMENTS';
+      elements: Element[];
+   }
+   | {
+      type: 'APPLY_WHITEBOARD_STATE';
+      state: WhiteboardState;
    };
 
 export type WhiteboardMode = 'editable' | 'readonly';

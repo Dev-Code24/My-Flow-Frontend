@@ -201,6 +201,17 @@ export function whiteboardReducer(state: WhiteboardState, action: WhiteboardActi
          };
       }
 
+      case 'SYNC_DOCUMENT_ELEMENTS': {
+         return {
+            ...state,
+            elements: action.elements,
+         };
+      }
+
+      case 'APPLY_WHITEBOARD_STATE': {
+         return action.state;
+      }
+
       default: {
          return state;
       }

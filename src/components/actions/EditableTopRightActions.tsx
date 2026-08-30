@@ -6,14 +6,12 @@ interface EditableTopRightActionProps {
   onStartSession: (options: RoomCollaborationOptions) => Promise<void>;
   onExportToLink: () => Promise<void>;
   isStartingSession: boolean;
-  isAuthenticated: boolean;
   isExporting: boolean;
 }
 
 export default function EditableTopRightAction({
   onStartSession,
   onExportToLink,
-  isAuthenticated,
   isStartingSession,
   isExporting,
 }: EditableTopRightActionProps) {
@@ -22,7 +20,6 @@ export default function EditableTopRightAction({
       <ShareModal
         onStartSession={onStartSession}
         onExportToLink={onExportToLink}
-        isAuthenticated={isAuthenticated}
         isStartingSession={isStartingSession}
         isExporting={isExporting}
       />

@@ -6,11 +6,11 @@ import { LoaderCircle } from 'lucide-react';
 
 import { useJoinRoom } from '@/hooks/api';
 import { CollaborationParticipant } from '@/interfaces';
-import {
-  deleteCollaborationRoomEntry, getCollaborationParticipant, getCollaborationRoomEntry, getCollaborationWsToken,
+import { deleteCollaborationRoomEntry, getCollaborationParticipant, getCollaborationRoomEntry, getCollaborationWsToken,
   saveCollaborationParticipant, saveCollaborationWsToken
 } from '@/utils';
-import JoinCollaborationModal from "@/components/JoinCollaborationModal";
+import { JoinCollaborationModal, CollaborationWhiteboard } from "@/components";
+import { useAuth } from "@/hooks/auth";
 
 type RoomInitializationStatus = | 'initializing' | 'ready' | 'needs-display-name' | 'error';
 
@@ -19,8 +19,8 @@ export default function CollaborationRoomPage() {
   const router = useRouter();
 
   const { join, isJoining } = useJoinRoom();
-  // TODO: Swap this temp state with a proper auth context
-  const isAuthenticated = false;
+  const { isAuthenticated, isInitializing: isAuthenticating } = useAuth();
+  
   const [participant, setParticipant] = useState<CollaborationParticipant | null>(null);
   const [status, setStatus] = useState<RoomInitializationStatus>('initializing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -54,6 +54,10 @@ export default function CollaborationRoomPage() {
   );
 
   useEffect(() => {
+    if (isAuthenticating) {
+      return;
+    }
+
     async function initializeRoom() : Promise<void> {
       try {
         const existingParticipant = await getCollaborationParticipant(room_id);
@@ -111,7 +115,7 @@ export default function CollaborationRoomPage() {
     }
 
     void initializeRoom();
-  }, [room_id, isAuthenticated, joinAndInitialize]);
+  }, [room_id, isAuthenticated, joinAndInitialize, isAuthenticating]);
 
   if (status === 'initializing') {
     return (
@@ -165,22 +169,8 @@ export default function CollaborationRoomPage() {
   }
 
   return (
-    <main className='fixed inset-0 overflow-hidden bg-slate-200'>
-      <div className='flex h-full items-center justify-center'>
-        <div className='text-center'>
-          <h1 className='text-xl font-semibold text-text-primary'>
-            Collaboration room
-          </h1>
-
-          <p className='pt-3 text-sm text-text-secondary'>
-            {participant.displayName}
-          </p>
-
-          <p className='pt-1 text-xs text-text-muted'>
-            {participant.role}
-          </p>
-        </div>
-      </div>
-    </main>
+    <CollaborationWhiteboard
+      participant={participant}
+    />
   );
 }
