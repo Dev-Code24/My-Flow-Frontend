@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { shareFlow } from '@/lib/api/share';
 import { FlowDocumentData } from '@/lib/interfaces';
-import { toast } from '@/ui/toast/toast.service';
+import { ToastService } from '@/ui/toast/toast.service';
 
 interface UseExportFlowResult {
    exportFlow: (document: FlowDocumentData) => Promise<string | null>;
@@ -36,12 +36,12 @@ export function useExportFlow(): UseExportFlowResult {
          const shareableUrl = `${window.location.origin}/share/${flowId}`;
 
          await navigator.clipboard.writeText(shareableUrl);
-         toast.success('Shareable link copied to clipboard.');
+         ToastService.success('Shareable link copied to clipboard.');
 
          return shareableUrl;
       } catch (error) {
          console.error('Failed to export whiteboard:', error);
-         toast.error(`We couldn't create the shareable link. Please try again.`);
+         ToastService.error(`We couldn't create the shareable link. Please try again.`);
 
          return null;
       } finally {

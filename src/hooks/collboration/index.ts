@@ -1,0 +1,1 @@
+export { useCollaborationDocument } from './useCollaborationDocument';

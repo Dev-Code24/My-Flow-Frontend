@@ -172,7 +172,7 @@ function showToast(variant: ToastVariant, message: string, duration?: number): n
 	});
 }
 
-export const toast = {
+export const ToastService = {
 	success(message: string, duration?: number): number {
 		return showToast('success', message, duration);
 	},

@@ -16,7 +16,7 @@ export enum KeyboardKeys {
 };
 
 export enum CursorType {
-   POINTER = 'pointer',
+  POINTER = 'pointer',
 	TEXT = 'text',
 	NOT_ALLOWED = 'not-allowed',
 	DEFAULT = 'default',
@@ -41,3 +41,5 @@ export const initialWhiteBoardState: WhiteboardState = {
 
 export * from './zoom.constants';
 export * from './arrows.constants';
+export * from './yjs.constants';
+export * from './room.constants';
