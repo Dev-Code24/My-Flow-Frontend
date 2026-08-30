@@ -11,16 +11,18 @@ import { useCanvasPreventDefaultEvents, useCollaborativeWhiteboardDispatch, useK
 import Whiteboard from '../whiteboard';
 import { useCollaborationDocument } from "@/hooks/collboration";
 import { ShapesNavbar } from "@/components";
-
+import { useWebsocket } from "@/hooks/websocket";
 
 interface CollaborationWhiteboardProps {
   participant: CollaborationParticipant;
+  wsToken: string;
   initialElements?: Element[];
 }
 
 export default function CollaborationWhiteboard({
   participant,
   initialElements = [],
+  wsToken,
 }: CollaborationWhiteboardProps) {
   const mode: WhiteboardMode = 'editable';
 
@@ -53,6 +55,8 @@ export default function CollaborationWhiteboard({
     role: participant.role === 'CREATOR' ? 'creator' : 'joiner',
     initialElements: collaborationInitialElements,
   });
+
+  useWebsocket({ wsToken, document });
 
   const collaborativeDispatch = useCollaborativeWhiteboardDispatch({ document, whiteBoardState, dispatchWhiteBoardState, addElement, updateElement, removeElement });
 
@@ -120,7 +124,6 @@ export default function CollaborationWhiteboard({
 
   useWhiteboardCursor({ canvasRef, tool, mode, isSpacePressed });
   useCanvasPreventDefaultEvents({ canvasRef });
-
 
   return (
     <Whiteboard

@@ -1,5 +1,5 @@
 import { createRoom } from '@/lib/api/rooms';
-import { toast } from '@/ui/toast/toast.service';
+import { ToastService } from '@/ui/toast/toast.service';
 import { RoomCollaborationOptions } from "@/interfaces";
 import { ApiError } from "@/lib/errors";
 import { saveCollaborationRoomEntry } from "@/utils";
@@ -27,7 +27,7 @@ export function useCreateRoom(): UseStartSessionResult {
          }
 
          console.error(message, error);
-         toast.error(message);
+         ToastService.error(message);
 
          return undefined;
       }

@@ -168,9 +168,24 @@ export default function CollaborationRoomPage() {
     );
   }
 
+  const wsToken = getCollaborationWsToken(room_id);
+
+  if (!wsToken) {
+    return (
+      <main className='fixed inset-0 flex items-center justify-center bg-surface'>
+        <div className='text-center'>
+          <h1 className='text-lg font-semibold text-text-primary'>
+            Unable to join room, please refresh the page.
+          </h1>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <CollaborationWhiteboard
       participant={participant}
+      wsToken={wsToken}
     />
   );
 }

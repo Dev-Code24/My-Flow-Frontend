@@ -1,4 +1,5 @@
 import { WsMessage, WsMessageType } from "@/lib/interfaces";
+import { ENV_CONFIG } from "@/lib/config";
 
 type MessageListener = (message: WsMessage) => void;
 
@@ -7,7 +8,7 @@ export class WebSocketService {
   private messageListeners = new Set<MessageListener>();
 
   connect(wsToken: string): WebSocket {
-    const url = new URL(process.env.NEXT_PUBLIC_WEBSOCKET_URL!);
+    const url = new URL(ENV_CONFIG.WS_BASE_URL);
     url.searchParams.set('token', wsToken);
 
     this.socket = new WebSocket(url.toString());

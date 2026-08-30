@@ -2,7 +2,7 @@ import { JoinRoomResponseData } from "@/lib/interfaces";
 import { useCallback, useState } from "react";
 import { joinRoom } from "@/lib/api/rooms";
 import { ApiError } from "@/lib/errors";
-import { toast } from "@/ui/toast";
+import { ToastService } from "@/ui/toast";
 
 interface UseJoinRoomResult {
   join: (roomId: string, displayName?: string) => Promise<JoinRoomResponseData | undefined>;
@@ -29,7 +29,7 @@ export function useJoinRoom(): UseJoinRoomResult {
       }
 
       console.error(message, error);
-      toast.error(message);
+      ToastService.error(message);
 
       return undefined;
     } finally {

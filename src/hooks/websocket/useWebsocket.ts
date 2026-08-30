@@ -6,6 +6,7 @@ import * as Y from 'yjs';
 import { WsMessage, WsMessageType } from '@/lib/interfaces';
 import { WebSocketService } from '@/lib/websocket';
 import { base64ToUint8Array, uint8ArrayToBase64 } from '@/lib/utils';
+import { ToastService } from "@/ui/toast";
 
 type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -25,14 +26,20 @@ export function useWebsocket({
     const socket = service.connect(wsToken);
 
     const handleOpen = (): void => {
+      ToastService.success("Connected");
+      console.log('Connected');
       setStatus('connected');
     };
 
     const handleClose = (): void => {
+      ToastService.info("Disconnected");
+      console.log('Disconnected');
       setStatus('disconnected');
     };
 
     const handleError = (): void => {
+      ToastService.error("Error");
+      console.log('Error');
       setStatus('error');
     };
 
@@ -51,6 +58,8 @@ export function useWebsocket({
       if (origin === service) {
         return;
       }
+
+      ToastService.error("Something changed!");
 
       service.send({
         type: WsMessageType.YJS_UPDATE,
