@@ -23,7 +23,6 @@ export default function ProfileMenu({
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
   const avatarText = getAvatarText(user.name);
-
   const avatarBackgroundColor =  getAvatarBackgroundColor(user.name);
 
   useEffect(() => {

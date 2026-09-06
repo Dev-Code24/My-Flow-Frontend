@@ -1,3 +1,4 @@
-import CollaborationWhiteboard from "./CollaborationWhiteboard";
+import CollaborationWhiteboard from './CollaborationWhiteboard';
+import RejoinCollaborationModal from './RejoinCollaborationModal';
 
-export { CollaborationWhiteboard };
+export { CollaborationWhiteboard, RejoinCollaborationModal };

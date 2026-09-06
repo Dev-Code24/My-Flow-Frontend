@@ -2,35 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import * as Y from "yjs";
-
 import { Element } from "@/interfaces";
-import {
-	addElementToYDoc,
-	getElementsFromYDoc,
-	getYElements,
-	removeElementFromYDoc,
-	seedYDoc,
-	updateYElement,
-	YElementMap,
-	YElementsMap,
+import { addElementToYDoc, getElementsFromYDoc, getYElements, removeElementFromYDoc, updateYElement, YElementMap,
+	YElementsMap
 } from "@/lib/yjs";
-
-export type CollaborationRole = "creator" | "joiner";
-
-interface UseCollaborationDocumentParams {
-	role: CollaborationRole;
-	initialElements?: Element[];
-}
 
 interface UseCollaborationDocumentResult {
 	document: Y.Doc;
 	yElements: YElementsMap;
 	elements: Element[];
-
 	addElement: (element: Element) => void;
-
 	updateElement: (elementId: string, updates: Partial<Element>) => void;
-
 	removeElement: (elementId: string) => void;
 }
 
@@ -39,7 +21,7 @@ interface CollaborationDocument {
 	yElements: YElementsMap;
 }
 
-export function useCollaborationDocument({ role, initialElements = [] }: UseCollaborationDocumentParams): UseCollaborationDocumentResult {
+export function useCollaborationDocument(): UseCollaborationDocumentResult {
 	const [collaborationDocument] = useState<CollaborationDocument>(() => {
 		const document = new Y.Doc();
 
@@ -51,7 +33,7 @@ export function useCollaborationDocument({ role, initialElements = [] }: UseColl
 
 	const { document, yElements } = collaborationDocument;
 
-	const [elements, setElements] = useState<Element[]>(role === "creator" ? initialElements : []);
+	const [elements, setElements] = useState<Element[]>([]);
 
 	useEffect(() => {
 		function handleDocumentChange(): void {
@@ -60,16 +42,10 @@ export function useCollaborationDocument({ role, initialElements = [] }: UseColl
 
 		yElements.observeDeep(handleDocumentChange);
 
-		if (role === "creator" && yElements.size === 0) {
-			seedYDoc(yElements, initialElements);
-		}
-
 		return () => {
 			yElements.unobserveDeep(handleDocumentChange);
-
-			document.destroy();
 		};
-	}, [document, yElements, role, initialElements]);
+	}, [yElements]);
 
 	const addElement = useCallback(
 		(element: Element): void => {
@@ -106,7 +82,6 @@ export function useCollaborationDocument({ role, initialElements = [] }: UseColl
 		document,
 		yElements,
 		elements,
-
 		addElement,
 		updateElement,
 		removeElement,

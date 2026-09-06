@@ -7,13 +7,18 @@ export class WebSocketService {
   private socket: WebSocket | null = null;
   private messageListeners = new Set<MessageListener>();
 
+  constructor() {
+    this.handleMessage = this.handleMessage.bind(this);
+  }
+
   connect(wsToken: string): WebSocket {
+    this.disconnect();
     const url = new URL(ENV_CONFIG.WS_BASE_URL);
     url.searchParams.set('token', wsToken);
 
     this.socket = new WebSocket(url.toString());
 
-    this.socket.addEventListener('message', this.handleMessage.bind(this));
+    this.socket.addEventListener('message', this.handleMessage);
 
     return this.socket;
   }
@@ -23,7 +28,7 @@ export class WebSocketService {
       return;
     }
 
-    this.socket.removeEventListener('message', this.handleMessage.bind(this));
+    this.socket.removeEventListener('message', this.handleMessage);
 
     this.socket.close();
     this.socket = null;
@@ -48,6 +53,8 @@ export class WebSocketService {
   getSocket(): WebSocket | null {
     return this.socket;
   }
+
+
 
   private handleMessage(event: MessageEvent): void {
     try {

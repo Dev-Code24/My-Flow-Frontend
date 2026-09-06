@@ -1,4 +1,5 @@
-import { RoomDuration, RoomRole } from "@/lib/interfaces";
+import { RoomDuration, RoomRole } from '@/lib/interfaces';
+import { Element } from '@/interfaces';
 
 export interface RoomCollaborationOptions {
   duration: RoomDuration;
@@ -15,4 +16,13 @@ export interface CollaborationParticipant {
   participantId: string;
   displayName: string;
   role: RoomRole;
+}
+
+export type CollaborationEntryMode = 'continue' | 'clean';
+
+export interface CollaborationSnapshot {
+  roomId: string;
+  elements: Element[];
+  updatedAt: number;
+  lastAccessedAt: number;
 }

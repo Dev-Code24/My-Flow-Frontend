@@ -5,14 +5,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { LoaderCircle } from 'lucide-react';
 
 import { useJoinRoom } from '@/hooks/api';
-import { CollaborationParticipant } from '@/interfaces';
-import { deleteCollaborationRoomEntry, getCollaborationParticipant, getCollaborationRoomEntry, getCollaborationWsToken,
-  saveCollaborationParticipant, saveCollaborationWsToken
+import { CollaborationEntryMode, CollaborationParticipant, CollaborationSnapshot } from '@/interfaces';
+import {
+  cleanupCollaborationSnapshots,
+  deleteCollaborationRoomEntry, getCollaborationParticipant, getCollaborationRoomEntry, getCollaborationWsToken,
+  getValidCollaborationSnapshot,
+  saveCollaborationParticipant, saveCollaborationWsToken, touchCollaborationSnapshot,
 } from '@/utils';
-import { JoinCollaborationModal, CollaborationWhiteboard } from "@/components";
+import { JoinCollaborationModal, CollaborationWhiteboard, RejoinCollaborationModal } from "@/components";
 import { useAuth } from "@/hooks/auth";
 
-type RoomInitializationStatus = | 'initializing' | 'ready' | 'needs-display-name' | 'error';
+type RoomInitializationStatus = | 'initializing' | 'ready' | 'needs-display-name' | 'needs-rejoin-choice' | 'error';
 
 export default function CollaborationRoomPage() {
   const { room_id } = useParams<{ room_id: string }>();
@@ -24,6 +27,23 @@ export default function CollaborationRoomPage() {
   const [participant, setParticipant] = useState<CollaborationParticipant | null>(null);
   const [status, setStatus] = useState<RoomInitializationStatus>('initializing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cachedSnapshot, setCachedSnapshot] = useState<CollaborationSnapshot | null>(null);
+  const [entryMode, setEntryMode] = useState<CollaborationEntryMode | null>(null);
+
+  const prepareCollaborationEntry = useCallback(async (): Promise<void> => {
+    const snapshot = await getValidCollaborationSnapshot(room_id);
+
+    if (!snapshot) {
+      setCachedSnapshot(null);
+      setEntryMode('clean');
+      setStatus('ready');
+
+      return;
+    }
+
+    setCachedSnapshot(snapshot);
+    setStatus('needs-rejoin-choice');
+  }, [room_id]);
 
   const joinAndInitialize = useCallback(async (displayName?: string): Promise<boolean> => {
       const joinResponse = await join(room_id, displayName);
@@ -46,11 +66,11 @@ export default function CollaborationRoomPage() {
       await deleteCollaborationRoomEntry(room_id);
 
       setParticipant(collaborationParticipant);
-      setStatus('ready');
+      await prepareCollaborationEntry();
 
       return true;
     },
-    [room_id, join]
+    [join, room_id, prepareCollaborationEntry]
   );
 
   useEffect(() => {
@@ -60,12 +80,13 @@ export default function CollaborationRoomPage() {
 
     async function initializeRoom() : Promise<void> {
       try {
+        await cleanupCollaborationSnapshots(room_id);
         const existingParticipant = await getCollaborationParticipant(room_id);
         const existingWsToken = getCollaborationWsToken(room_id);
 
         if (existingParticipant && existingWsToken) {
           setParticipant(existingParticipant);
-          setStatus('ready');
+          await prepareCollaborationEntry();
 
           return;
         }
@@ -115,7 +136,7 @@ export default function CollaborationRoomPage() {
     }
 
     void initializeRoom();
-  }, [room_id, isAuthenticated, joinAndInitialize, isAuthenticating]);
+  }, [room_id, isAuthenticated, joinAndInitialize, isAuthenticating, prepareCollaborationEntry]);
 
   if (status === 'initializing') {
     return (
@@ -152,6 +173,31 @@ export default function CollaborationRoomPage() {
     );
   }
 
+  if (status === 'needs-rejoin-choice' && cachedSnapshot) {
+    return (
+      <main className='fixed inset-0 bg-surface'>
+        <RejoinCollaborationModal
+          isOpen
+          onBack={() => {
+            router.push('/');
+          }}
+          onContinue={() => {
+            void touchCollaborationSnapshot(room_id);
+
+            setEntryMode('continue');
+            setStatus('ready');
+          }}
+          onStartClean={() => {
+            void touchCollaborationSnapshot(room_id);
+
+            setEntryMode('clean');
+            setStatus('ready');
+          }}
+        />
+      </main>
+    );
+  }
+
   if (status === 'error' || !participant) {
     return (
       <main className='fixed inset-0 flex items-center justify-center bg-surface'>
@@ -182,10 +228,26 @@ export default function CollaborationRoomPage() {
     );
   }
 
+  if (!entryMode) {
+    return (
+      <main className='fixed inset-0 flex items-center justify-center bg-surface'>
+        <div className='text-center'>
+          <h1 className='text-lg font-semibold text-text-primary'>
+            Unable to initialize collaboration.
+          </h1>
+        </div>
+      </main>
+    );
+  }
+
+  const cachedElements = entryMode === 'continue' && cachedSnapshot ? cachedSnapshot.elements : [];
+
   return (
     <CollaborationWhiteboard
-      participant={participant}
+      roomId={room_id}
       wsToken={wsToken}
+      entryMode={entryMode}
+      cachedElements={cachedElements}
     />
   );
 }

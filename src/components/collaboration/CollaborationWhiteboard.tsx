@@ -2,27 +2,35 @@
 
 import { useEffect, useReducer, useRef, useState } from 'react';
 
-import { Element, CollaborationParticipant, WhiteboardAction, WhiteboardMode, WhiteboardState } from '@/interfaces';
+import {
+  Element,
+  WhiteboardAction,
+  WhiteboardMode,
+  WhiteboardState,
+  CollaborationEntryMode,
+} from '@/interfaces';
 import { initialWhiteBoardState } from '@/constants';
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
 import { useCanvasPreventDefaultEvents, useCollaborativeWhiteboardDispatch, useKeyboardShortcuts, useWhiteboardCursor,
   useWhiteboardHistory, useWhiteboardInteractions, useWhiteboardViewport
 } from '@/hooks/whiteboard';
 import Whiteboard from '../whiteboard';
-import { useCollaborationDocument } from "@/hooks/collboration";
+import { useCollaborationSession } from "@/hooks/collboration";
 import { ShapesNavbar } from "@/components";
 import { useWebsocket } from "@/hooks/websocket";
 
 interface CollaborationWhiteboardProps {
-  participant: CollaborationParticipant;
+  roomId: string;
   wsToken: string;
-  initialElements?: Element[];
+  entryMode: CollaborationEntryMode;
+  cachedElements: Element[];
 }
 
 export default function CollaborationWhiteboard({
-  participant,
-  initialElements = [],
+  roomId,
   wsToken,
+  entryMode,
+  cachedElements,
 }: CollaborationWhiteboardProps) {
   const mode: WhiteboardMode = 'editable';
 
@@ -32,7 +40,7 @@ export default function CollaborationWhiteboard({
   const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
   const [isAltPressed, setIsAltPressed] = useState<boolean>(false);
   const [isCtrlOrMetaPressed, setIsCtrlOrMetaPressed] = useState<boolean>(false);
-  const [collaborationInitialElements] = useState<Element[]>(() => participant.role === 'CREATOR' ? initialElements : []);
+  const [collaborationInitialElements] = useState<Element[]>([]);
 
   const [whiteBoardState, dispatchWhiteBoardState] = useReducer<WhiteboardState, [action: WhiteboardAction]>(whiteboardReducer, initialWhiteBoardState);
 
@@ -51,10 +59,7 @@ export default function CollaborationWhiteboard({
     addElement,
     updateElement,
     removeElement,
-  } = useCollaborationDocument({
-    role: participant.role === 'CREATOR' ? 'creator' : 'joiner',
-    initialElements: collaborationInitialElements,
-  });
+  } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
 
   useWebsocket({ wsToken, document });
 
