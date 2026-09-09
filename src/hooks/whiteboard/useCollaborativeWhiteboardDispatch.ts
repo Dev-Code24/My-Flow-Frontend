@@ -18,11 +18,9 @@ interface UseCollaborativeWhiteboardDispatchParams {
   whiteBoardState: WhiteboardState;
   dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
   addElement: (element: Element) => void;
-  updateElement: (
-    elementId: string,
-    updates: Partial<Element>
-  ) => void;
+  updateElement: (elementId: string, updates: Partial<Element>) => void;
   removeElement: (elementId: string) => void;
+  onDocumentMutation: (beforeElements: Element[], afterElements: Element[]) => void;
 }
 
 export function useCollaborativeWhiteboardDispatch({
@@ -32,6 +30,7 @@ export function useCollaborativeWhiteboardDispatch({
   addElement,
   updateElement,
   removeElement,
+  onDocumentMutation,
 }: UseCollaborativeWhiteboardDispatchParams): Dispatch<WhiteboardAction> {
   const stateRef = useRef<WhiteboardState>(whiteBoardState);
 
@@ -46,6 +45,11 @@ export function useCollaborativeWhiteboardDispatch({
       stateRef.current = nextState;
 
       if (action.type !== 'SYNC_DOCUMENT_ELEMENTS') {
+        onDocumentMutation(
+          currentState.elements,
+          nextState.elements,
+        );
+
         syncDocumentChanges(
           document,
           currentState.elements,
@@ -57,7 +61,7 @@ export function useCollaborativeWhiteboardDispatch({
       }
 
       dispatchWhiteBoardState({type: 'APPLY_WHITEBOARD_STATE', state: nextState });
-    }, [document, dispatchWhiteBoardState, addElement, updateElement, removeElement]);
+    }, [dispatchWhiteBoardState, onDocumentMutation, document, addElement, updateElement, removeElement]);
 }
 
 function syncDocumentChanges(

@@ -1,4 +1,4 @@
-import { Element, WhiteboardAction } from '@/interfaces';
+import { DocumentHistoryLifecycle, Element, WhiteboardAction } from '@/interfaces';
 import { Dispatch, RefObject, SetStateAction } from 'react';
 
 export interface CommonKeyboardShortcutsProps {
@@ -17,6 +17,7 @@ export interface EditingKeyboardShortcutsProps {
    recordSnapshot: (snapshot: Element[]) => void;
    undo: () => void;
    redo: () => void;
+   historyLifecycle?: DocumentHistoryLifecycle;
 }
 
 export interface ReadonlyKeyboardShortcutsProps extends CommonKeyboardShortcutsProps {

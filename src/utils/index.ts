@@ -5,3 +5,4 @@ export * from './cursor';
 export * from './elements';
 export * from './interactions';
 export * from './validation.utils';
+export * from './history.utils';

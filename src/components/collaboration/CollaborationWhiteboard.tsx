@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import {
   Element,
   WhiteboardAction,
   WhiteboardMode,
   WhiteboardState,
-  CollaborationEntryMode,
+  CollaborationEntryMode, CollaborationHistoryEntryDraft,
 } from '@/interfaces';
 import { initialWhiteBoardState } from '@/constants';
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
@@ -15,9 +15,8 @@ import { useCanvasPreventDefaultEvents, useCollaborativeWhiteboardDispatch, useK
   useWhiteboardHistory, useWhiteboardInteractions, useWhiteboardViewport
 } from '@/hooks/whiteboard';
 import Whiteboard from '../whiteboard';
-import { useCollaborationSession } from "@/hooks/collboration";
+import { useCollaborationHistoryRecorder, useCollaborationSession } from "@/hooks/collboration";
 import { ShapesNavbar } from "@/components";
-import { useWebsocket } from "@/hooks/websocket";
 
 interface CollaborationWhiteboardProps {
   roomId: string;
@@ -61,9 +60,23 @@ export default function CollaborationWhiteboard({
     removeElement,
   } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
 
-  useWebsocket({ wsToken, document });
+  const handleHistoryEntryCommitted = useCallback((entry: CollaborationHistoryEntryDraft): void => {
+    console.log('Collaboration history entry:', entry);
+  }, []);
 
-  const collaborativeDispatch = useCollaborativeWhiteboardDispatch({ document, whiteBoardState, dispatchWhiteBoardState, addElement, updateElement, removeElement });
+  const { beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
+    onEntryCommitted: handleHistoryEntryCommitted
+  });
+
+  const collaborativeDispatch = useCollaborativeWhiteboardDispatch({
+    document,
+    whiteBoardState,
+    dispatchWhiteBoardState,
+    addElement,
+    updateElement,
+    removeElement,
+    onDocumentMutation: recordDocumentMutation,
+  });
 
   useEffect(() => {
     collaborativeDispatch({
@@ -86,10 +99,13 @@ export default function CollaborationWhiteboard({
   } = useWhiteboardViewport({ canvasRef, elements });
 
   // Temporary history implementation.
-  const { recordSnapshot, undo, redo } = useWhiteboardHistory({
-    elements,
-    dispatchWhiteBoardState: collaborativeDispatch,
-  });
+  const { recordSnapshot, undo, redo } = useWhiteboardHistory({ elements, dispatchWhiteBoardState: collaborativeDispatch });
+
+  const historyLifecycle = {
+    beginDocumentChange,
+    commitDocumentChange,
+    discardDocumentChange,
+  };
 
   const { handleMouseDown, handleMouseMove, handleMouseUp, cancelInteraction } = useWhiteboardInteractions({
     mode,
@@ -106,7 +122,7 @@ export default function CollaborationWhiteboard({
     isSpacePressed,
     setPan,
     dispatchWhiteBoardState: collaborativeDispatch,
-    editing: { documentRevision, recordSnapshot, isAltPressed },
+    editing: { documentRevision, recordSnapshot, isAltPressed, historyLifecycle },
   });
 
   useKeyboardShortcuts({
@@ -124,6 +140,7 @@ export default function CollaborationWhiteboard({
       recordSnapshot,
       undo,
       redo,
+      historyLifecycle,
     },
   });
 
