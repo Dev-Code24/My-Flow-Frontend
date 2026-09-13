@@ -58,14 +58,12 @@ export default function CollaborationWhiteboard({
     addElement,
     updateElement,
     removeElement,
+    historyState,
+    commitHistoryEntry,
   } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
 
-  const handleHistoryEntryCommitted = useCallback((entry: CollaborationHistoryEntryDraft): void => {
-    console.log('Collaboration history entry:', entry);
-  }, []);
-
-  const { beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
-    onEntryCommitted: handleHistoryEntryCommitted
+  const {beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
+    onEntryCommitted: commitHistoryEntry,
   });
 
   const collaborativeDispatch = useCollaborativeWhiteboardDispatch({
@@ -146,6 +144,10 @@ export default function CollaborationWhiteboard({
 
   useWhiteboardCursor({ canvasRef, tool, mode, isSpacePressed });
   useCanvasPreventDefaultEvents({ canvasRef });
+
+  useEffect(() => {
+    console.log('Room history state:', historyState);
+  }, [historyState]);
 
   return (
     <Whiteboard

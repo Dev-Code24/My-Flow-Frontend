@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 
 import { WsMessage, WsMessageType } from '@/lib/interfaces';
 import { WebSocketService } from '@/lib/websocket';
 import { base64ToUint8Array, uint8ArrayToBase64 } from '@/lib/utils';
 import { ToastService } from '@/ui/toast';
+import { CollaborationHistoryEntryDraft, RoomHistoryState } from "@/interfaces";
 
 export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 export type InitialSyncStatus = 'waiting' | 'syncing' | 'completed' | 'not-required';
@@ -22,11 +23,18 @@ export function useWebsocket({
   document,
   onInitialSyncReady,
 }: UseCollaborationWebSocketParams) {
+  const isInitialSyncPendingRef = useRef<boolean>(false);
+  const onInitialSyncReadyRef = useRef(onInitialSyncReady);
   const [status, setStatus] = useState<WebSocketStatus>('connecting');
   const [initialSyncStatus, setInitialSyncStatus] = useState<InitialSyncStatus>('waiting');
   const [service] = useState(() => new WebSocketService());
-  const isInitialSyncPendingRef = useRef<boolean>(false);
-  const onInitialSyncReadyRef = useRef(onInitialSyncReady);
+  const [historyState, setHistoryState] = useState<RoomHistoryState>({
+    cursor: 0,
+    historyVersion: 0,
+    historyLength: 0,
+    canUndo: false,
+    canRedo: false,
+  });
 
   useEffect(() => {
     onInitialSyncReadyRef.current = onInitialSyncReady;
@@ -125,6 +133,13 @@ export function useWebsocket({
 
             return;
           }
+
+          case WsMessageType.ROOM_HISTORY_STATE: {
+            console.log('ROOM_HISTORY_STATE received:', message.message);
+            setHistoryState(message.message);
+
+            return;
+          }
         }
       });
 
@@ -162,8 +177,17 @@ export function useWebsocket({
     };
   }, [wsToken, document, service]);
 
+  const commitHistoryEntry = useCallback((entry: CollaborationHistoryEntryDraft): void => {
+    service.send({
+      type: WsMessageType.HISTORY_ENTRY_COMMIT,
+      message: entry,
+    });
+  }, [service]);
+
   return {
     status,
     initialSyncStatus,
+    historyState,
+    commitHistoryEntry,
   };
 }

@@ -30,13 +30,14 @@ export function useCollaborationSession({
     }
 
     hasImportedCachedSnapshotRef.current = true;
-
     seedYDoc(yElements, cachedElements);
   }, [entryMode, cachedElements, yElements]);
 
   const {
     status,
     initialSyncStatus,
+    historyState,
+    commitHistoryEntry,
   } = useWebsocket({
     wsToken,
     document,
@@ -52,6 +53,8 @@ export function useCollaborationSession({
     elements,
     status,
     initialSyncStatus,
+    historyState,
+    commitHistoryEntry,
     addElement,
     updateElement,
     removeElement,

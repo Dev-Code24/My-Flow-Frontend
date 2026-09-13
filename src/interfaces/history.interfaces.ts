@@ -16,6 +16,14 @@ export interface CollaborationHistoryEntryDraft {
   changes: HistoryElementChange[];
 }
 
+export interface RoomHistoryState {
+  cursor: number;
+  historyVersion: number;
+  historyLength: number;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
 export interface DocumentHistoryLifecycle {
   beginDocumentChange: VoidFunction;
   commitDocumentChange: VoidFunction;
