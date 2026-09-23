@@ -1,5 +1,6 @@
 export const YJS_DOCUMENT_KEYS = {
 	ELEMENTS: 'elements',
+	ELEMENT_ORDER: 'elementOrder',
 } as const;
 
 export const YJS_ELEMENT_KEYS = {

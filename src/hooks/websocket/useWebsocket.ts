@@ -100,10 +100,8 @@ export function useWebsocket({
             service.send({
               type: WsMessageType.YJS_SYNC_STEP_2,
               message: {
-                update:
-                  uint8ArrayToBase64(
-                    missingUpdate,
-                  ),
+                updateId: crypto.randomUUID(),
+                update: uint8ArrayToBase64(missingUpdate),
               },
             });
 
@@ -143,10 +141,7 @@ export function useWebsocket({
         }
       });
 
-    const handleDocumentUpdate = (
-      update: Uint8Array,
-      origin: unknown,
-    ): void => {
+    const handleDocumentUpdate = (update: Uint8Array, origin: unknown): void => {
       if (origin === service) {
         return;
       }
@@ -154,6 +149,7 @@ export function useWebsocket({
       service.send({
         type: WsMessageType.YJS_UPDATE,
         message: {
+          updateId: crypto.randomUUID(),
           update: uint8ArrayToBase64(update),
         },
       });
@@ -184,10 +180,29 @@ export function useWebsocket({
     });
   }, [service]);
 
+  const undo = useCallback((): void => {
+    if (!historyState.canUndo) {
+      return;
+    }
+
+    service.send({
+      type: WsMessageType.UNDO_REQUEST,
+      message: {
+        requestId: crypto.randomUUID(),
+        expectedVersion:
+        historyState.historyVersion,
+      },
+    });
+  }, [
+    service,
+    historyState,
+  ]);
+
   return {
     status,
     initialSyncStatus,
     historyState,
     commitHistoryEntry,
+    undo,
   };
 }

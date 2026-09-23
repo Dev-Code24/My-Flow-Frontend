@@ -21,7 +21,7 @@ export function useCollaborationSession({
   entryMode,
   cachedElements,
 }: UseCollaborationSessionParams) {
-  const {document, yElements, elements, addElement, updateElement, removeElement } = useCollaborationDocument();
+  const {document, yElements, elements, addElement, updateElement, removeElement, syncElementOrder, yElementOrder } = useCollaborationDocument();
   const hasImportedCachedSnapshotRef = useRef<boolean>(false);
 
   const handleInitialSyncReady = useCallback((): void => {
@@ -30,8 +30,8 @@ export function useCollaborationSession({
     }
 
     hasImportedCachedSnapshotRef.current = true;
-    seedYDoc(yElements, cachedElements);
-  }, [entryMode, cachedElements, yElements]);
+    seedYDoc(yElements, yElementOrder, cachedElements);
+  }, [entryMode, yElements, yElementOrder, cachedElements]);
 
   const {
     status,
@@ -58,5 +58,6 @@ export function useCollaborationSession({
     addElement,
     updateElement,
     removeElement,
+    syncElementOrder,
   };
 }

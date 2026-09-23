@@ -18,6 +18,7 @@ interface UseCollaborativeWhiteboardDispatchParams {
   whiteBoardState: WhiteboardState;
   dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
   addElement: (element: Element) => void;
+  syncElementOrder: (elements: Element[]) => void;
   updateElement: (elementId: string, updates: Partial<Element>) => void;
   removeElement: (elementId: string) => void;
   onDocumentMutation: (beforeElements: Element[], afterElements: Element[]) => void;
@@ -28,6 +29,7 @@ export function useCollaborativeWhiteboardDispatch({
   whiteBoardState,
   dispatchWhiteBoardState,
   addElement,
+  syncElementOrder,
   updateElement,
   removeElement,
   onDocumentMutation,
@@ -57,13 +59,15 @@ export function useCollaborativeWhiteboardDispatch({
           addElement,
           updateElement,
           removeElement,
+          syncElementOrder
         );
       }
 
       dispatchWhiteBoardState({type: 'APPLY_WHITEBOARD_STATE', state: nextState });
-    }, [dispatchWhiteBoardState, onDocumentMutation, document, addElement, updateElement, removeElement]);
+    }, [dispatchWhiteBoardState, onDocumentMutation, document, addElement, updateElement, removeElement, syncElementOrder]);
 }
 
+// TODO move this util to a util file
 function syncDocumentChanges(
   document: Y.Doc,
   currentElements: Element[],
@@ -71,6 +75,7 @@ function syncDocumentChanges(
   addElement: (element: Element) => void,
   updateElement: (elementId: string, updates: Partial<Element>) => void,
   removeElement: (elementId: string) => void,
+  syncElementOrder: (elements: Element[]) => void,
 ): void {
   if (currentElements === nextElements) {
     return;
@@ -81,8 +86,7 @@ function syncDocumentChanges(
 
   document.transact(() => {
     for (const element of nextElements) {
-      const currentElement =
-        currentElementsById.get(element.id);
+      const currentElement = currentElementsById.get(element.id);
 
       if (!currentElement) {
         addElement(element);
@@ -103,6 +107,8 @@ function syncDocumentChanges(
         removeElement(element.id);
       }
     }
+
+    syncElementOrder(nextElements);
   });
 }
 

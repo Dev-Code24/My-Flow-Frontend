@@ -5,9 +5,42 @@ import { YJS_COORDINATE_KEYS, YJS_DOCUMENT_KEYS, YJS_ELEMENT_KEYS } from "@/cons
 
 export type YElementMap = Y.Map<unknown>;
 export type YElementsMap = Y.Map<YElementMap>;
+export type YElementOrder = Y.Array<string>;
 
 export function getYElements(document: Y.Doc): YElementsMap {
 	return document.getMap<YElementMap>(YJS_DOCUMENT_KEYS.ELEMENTS);
+}
+
+export function getYElementOrder(document: Y.Doc): YElementOrder {
+	return document.getArray<string>(YJS_DOCUMENT_KEYS.ELEMENT_ORDER);
+}
+
+export function syncYElementOrder(
+	yElementOrder: YElementOrder,
+	elements: Element[],
+): void {
+	const nextOrder = elements.map((element) => element.id);
+
+	for (let index = 0; index < nextOrder.length; ++index) {
+		const elementId = nextOrder[index];
+		const currentOrder = yElementOrder.toArray();
+
+		if (currentOrder[index] === elementId) {
+			continue;
+		}
+
+		const existingIndex = currentOrder.indexOf(elementId);
+
+		if (existingIndex !== -1) {
+			yElementOrder.delete(existingIndex, 1);
+		}
+
+		yElementOrder.insert(index, [elementId]);
+	}
+
+	if (yElementOrder.length > nextOrder.length) {
+		yElementOrder.delete(nextOrder.length, yElementOrder.length - nextOrder.length);
+	}
 }
 
 export function createYElement(element: Element): YElementMap {
@@ -28,7 +61,10 @@ export function createYElement(element: Element): YElementMap {
 	return yElement;
 }
 
-export function getElementFromYMap(id: string, yElement: YElementMap): Element {
+export function getElementFromYMap(
+	id: string,
+	yElement: YElementMap
+): Element {
 	const curveOffset = getCoordinatesFromYElement(yElement, YJS_ELEMENT_KEYS.CURVE_OFFSET);
 
 	return {
@@ -44,11 +80,17 @@ export function getElementFromYMap(id: string, yElement: YElementMap): Element {
 	} as Element;
 }
 
-export function addElementToYDoc(yElements: YElementsMap, element: Element): void {
+export function addElementToYDoc(
+	yElements: YElementsMap,
+	element: Element
+): void {
 	yElements.set(element.id, createYElement(element));
 }
 
-export function updateYElement(yElement: YElementMap, updates: Partial<Element>): void {
+export function updateYElement(
+	yElement: YElementMap,
+	updates: Partial<Element>
+): void {
 	runInTransaction(yElement, () => {
 		if (updates.x !== undefined) {
 			setIfChanged(yElement, YJS_ELEMENT_KEYS.X, updates.x);
@@ -84,24 +126,50 @@ export function updateYElement(yElement: YElementMap, updates: Partial<Element>)
 	});
 }
 
-export function removeElementFromYDoc(yElements: YElementsMap, elementId: string): void {
+export function removeElementFromYDoc(
+	yElements: YElementsMap,
+	elementId: string
+): void {
 	yElements.delete(elementId);
 }
 
-export function seedYDoc(yElements: YElementsMap, elements: Element[]): void {
+export function seedYDoc(
+	yElements: YElementsMap,
+	yElementOrder: YElementOrder,
+	elements: Element[],
+): void {
 	runInTransaction(yElements, () => {
+		const existingOrder = new Set(yElementOrder.toArray());
+
 		elements.forEach((element) => {
 			addElementToYDoc(yElements, element);
+
+			if ( existingOrder.has(element.id)) {
+				return;
+			}
+
+			yElementOrder.push([element.id]);
+
+			existingOrder.add(element.id);
 		});
 	});
 }
 
-export function getElementsFromYDoc(yElements: YElementsMap): Element[] {
+export function getElementsFromYDoc(
+	yElements: YElementsMap,
+	yElementOrder: YElementOrder,
+): Element[] {
 	const elements: Element[] = [];
 
-	yElements.forEach((yElement, elementId) => {
+	for (const elementId of yElementOrder.toArray()) {
+		const yElement = yElements.get(elementId);
+
+		if (!yElement) {
+			continue;
+		}
+
 		elements.push(getElementFromYMap(elementId, yElement));
-	});
+	}
 
 	return elements;
 }
@@ -116,7 +184,10 @@ function createYCoordinates(coordinates: Coordinates2D): Y.Map<number> {
 	return yCoordinates;
 }
 
-function getCoordinatesFromYElement(yElement: YElementMap, key: string): Coordinates2D | undefined {
+function getCoordinatesFromYElement(
+	yElement: YElementMap,
+	key: string
+): Coordinates2D | undefined {
 	const yCoordinates = yElement.get(key);
 
 	if (!(yCoordinates instanceof Y.Map)) {
@@ -129,7 +200,10 @@ function getCoordinatesFromYElement(yElement: YElementMap, key: string): Coordin
 	};
 }
 
-function updateCurveOffset(yElement: YElementMap, curveOffset: Coordinates2D | undefined): void {
+function updateCurveOffset(
+	yElement: YElementMap,
+	curveOffset: Coordinates2D | undefined
+): void {
 	if (!curveOffset) {
 		yElement.delete(YJS_ELEMENT_KEYS.CURVE_OFFSET);
 
@@ -149,7 +223,11 @@ function updateCurveOffset(yElement: YElementMap, curveOffset: Coordinates2D | u
 	yElement.set(YJS_ELEMENT_KEYS.CURVE_OFFSET, createYCoordinates(curveOffset));
 }
 
-function setIfChanged<T>(map: Y.Map<unknown>, key: string, value: T): void {
+function setIfChanged<T>(
+	map: Y.Map<unknown>,
+	key: string,
+	value: T
+): void {
 	if (map.get(key) === value) {
 		return;
 	}
@@ -157,7 +235,10 @@ function setIfChanged<T>(map: Y.Map<unknown>, key: string, value: T): void {
 	map.set(key, value);
 }
 
-function runInTransaction<T>(map: Y.Map<T>, callback: () => void): void {
+function runInTransaction<T>(
+	map: Y.Map<T>,
+	callback: () => void
+): void {
 	if (!map.doc) {
 		callback();
 		return;

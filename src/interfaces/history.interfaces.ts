@@ -3,8 +3,11 @@ import { Element } from './whiteboard.interfaces';
 export interface HistoryElementState {
   element: Element;
   index: number;
+  orderContext: {
+    previousElementId: string | null;
+    nextElementId: string | null;
+  };
 }
-
 export interface HistoryElementChange {
   elementId: string;
   before: HistoryElementState | null;

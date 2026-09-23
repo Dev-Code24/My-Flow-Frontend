@@ -1,13 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 
 import {
   Element,
   WhiteboardAction,
   WhiteboardMode,
   WhiteboardState,
-  CollaborationEntryMode, CollaborationHistoryEntryDraft,
+  CollaborationEntryMode,
 } from '@/interfaces';
 import { initialWhiteBoardState } from '@/constants';
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
@@ -58,11 +58,12 @@ export default function CollaborationWhiteboard({
     addElement,
     updateElement,
     removeElement,
+    syncElementOrder,
     historyState,
     commitHistoryEntry,
   } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
 
-  const {beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
+  const { beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
     onEntryCommitted: commitHistoryEntry,
   });
 
@@ -74,6 +75,7 @@ export default function CollaborationWhiteboard({
     updateElement,
     removeElement,
     onDocumentMutation: recordDocumentMutation,
+    syncElementOrder
   });
 
   useEffect(() => {
