@@ -21,7 +21,7 @@ export function useCollaborationSession({
   entryMode,
   cachedElements,
 }: UseCollaborationSessionParams) {
-  const {document, yElements, elements, addElement, updateElement, removeElement, syncElementOrder, yElementOrder } = useCollaborationDocument();
+  const { document, yElements, elements, addElement, updateElement, removeElement, syncElementOrder, yElementOrder } = useCollaborationDocument();
   const hasImportedCachedSnapshotRef = useRef<boolean>(false);
 
   const handleInitialSyncReady = useCallback((): void => {
@@ -38,6 +38,7 @@ export function useCollaborationSession({
     initialSyncStatus,
     historyState,
     commitHistoryEntry,
+    undo,
   } = useWebsocket({
     wsToken,
     document,
@@ -55,6 +56,7 @@ export function useCollaborationSession({
     initialSyncStatus,
     historyState,
     commitHistoryEntry,
+    undo,
     addElement,
     updateElement,
     removeElement,

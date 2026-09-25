@@ -61,6 +61,7 @@ export default function CollaborationWhiteboard({
     syncElementOrder,
     historyState,
     commitHistoryEntry,
+    undo,
   } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
 
   const { beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
@@ -99,7 +100,11 @@ export default function CollaborationWhiteboard({
   } = useWhiteboardViewport({ canvasRef, elements });
 
   // Temporary history implementation.
-  const { recordSnapshot, undo, redo } = useWhiteboardHistory({ elements, dispatchWhiteBoardState: collaborativeDispatch });
+  const { recordSnapshot } = useWhiteboardHistory({ elements, dispatchWhiteBoardState: collaborativeDispatch });
+
+  const redo = (): void => {
+    // Global collaborative redo will be implemented next.
+  };
 
   const historyLifecycle = {
     beginDocumentChange,
