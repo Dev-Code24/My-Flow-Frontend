@@ -1,12 +1,5 @@
 import { Interaction } from './interactions.interfaces';
-import { Element, Tool } from './whiteboard.interfaces';
-
-export interface SelectionBox {
-   x1: number;
-   y1: number;
-   x2: number;
-   y2: number;
-}
+import { Element, SelectionBox, Tool } from './whiteboard.interfaces';
 
 export interface WhiteboardState {
    elements: Element[];
@@ -85,6 +78,14 @@ export type WhiteboardAction =
    }
    | {
       type: 'DELETE_SELECTED';
+   }
+   | {
+      type: 'SYNC_DOCUMENT_ELEMENTS';
+      elements: Element[];
+   }
+   | {
+      type: 'APPLY_WHITEBOARD_STATE';
+      state: WhiteboardState;
    };
 
 export type WhiteboardMode = 'editable' | 'readonly';

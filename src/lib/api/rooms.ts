@@ -1,7 +1,10 @@
-import { CreateRoomResponseData, CreateRoomRequest, JoinRoomResponseData, JoinRoomRequest, RoomResponseData, RoomDuration, RoomData, ApiResponse } from '@/lib/interfaces';
+import {
+  CreateRoomResponseData, CreateRoomRequest, JoinRoomResponseData, JoinRoomRequest, RoomResponseData, RoomDuration,
+  ApiResponse
+} from '@/lib/interfaces';
 import { api } from './api';
 
-export function createRoom(duration: RoomDuration): Promise<ApiResponse<RoomData>>{
+export function createRoom(duration: RoomDuration): Promise<ApiResponse<CreateRoomResponseData>>{
   const request: CreateRoomRequest = {
     duration,
   };
@@ -9,9 +12,9 @@ export function createRoom(duration: RoomDuration): Promise<ApiResponse<RoomData
   return api.post<CreateRoomResponseData>('/rooms/create', request);
 }
 
-export function joinRoom(roomId: string, name: string): Promise<ApiResponse<RoomData>> {
+export function joinRoom(roomId: string, displayName?: string): Promise<ApiResponse<JoinRoomResponseData>> {
   const request: JoinRoomRequest = {
-    name,
+    name: displayName ?? null,
   };
 
   return api.post<JoinRoomResponseData>(`/rooms/${roomId}/join`, request);

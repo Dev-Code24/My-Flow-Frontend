@@ -1,6 +1,15 @@
 import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, useRef } from 'react';
 
-import { Coordinates2D, Element, Interaction, MarqueeSelectionMode, SelectionBox, Tool, WhiteboardAction } from '@/interfaces';
+import {
+	Coordinates2D,
+	DocumentHistoryLifecycle,
+	Element,
+	Interaction,
+	MarqueeSelectionMode,
+	SelectionBox,
+	Tool,
+	WhiteboardAction,
+} from '@/interfaces';
 import { CursorType } from '@/constants';
 import {
 	findTopmostElementAtPosition,
@@ -33,6 +42,7 @@ export interface EditableWhiteboardInteractionsParams {
 	recordSnapshot: (snapshot: Element[]) => void;
 	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
 	isAltPressed?: boolean;
+	historyLifecycle?: DocumentHistoryLifecycle
 }
 
 const NOOP_INTERACTIONS: UseWhiteboardInteractionsResult = {
@@ -40,6 +50,12 @@ const NOOP_INTERACTIONS: UseWhiteboardInteractionsResult = {
 	handleMouseMove: () => {},
 	handleMouseUp: () => {},
 	cancelInteraction: () => {},
+};
+
+const EMPTY_HISTORY_LIFECYCLE: DocumentHistoryLifecycle = {
+	beginDocumentChange: () => {},
+	commitDocumentChange: () => {},
+	discardDocumentChange: () => {},
 };
 
 const EMPTY_EDITABLE_INTERACTION_PROPS: EditableWhiteboardInteractionsParams = {
@@ -57,6 +73,7 @@ const EMPTY_EDITABLE_INTERACTION_PROPS: EditableWhiteboardInteractionsParams = {
 	recordSnapshot: () => {},
 	dispatchWhiteBoardState: () => {},
 	isAltPressed: false,
+	historyLifecycle: EMPTY_HISTORY_LIFECYCLE,
 };
 
 export function useEditableWhiteboardInteractions(
@@ -81,6 +98,7 @@ export function useEditableWhiteboardInteractions(
 		recordSnapshot,
 		dispatchWhiteBoardState,
 		isAltPressed = false,
+		historyLifecycle = EMPTY_HISTORY_LIFECYCLE
 	} = resolvedProps;
 
 	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
@@ -92,6 +110,9 @@ export function useEditableWhiteboardInteractions(
 		documentRevision,
 		recordSnapshot,
 		dispatchWhiteBoardState,
+		onBeginDocumentChange: historyLifecycle.beginDocumentChange,
+		onCommitDocumentChange: historyLifecycle.commitDocumentChange,
+		onDiscardDocumentChange: historyLifecycle.discardDocumentChange,
 	});
 
 	const drawing = useDrawingInteraction({

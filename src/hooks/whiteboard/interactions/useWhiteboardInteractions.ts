@@ -33,6 +33,7 @@ export function useWhiteboardInteractions(props: UseWhiteboardInteractionsParams
             isSpacePressed: props.isSpacePressed,
             dispatchWhiteBoardState: props.dispatchWhiteBoardState,
             documentRevision: props.editing.documentRevision,
+            historyLifecycle: props.editing.historyLifecycle,
             recordSnapshot: props.editing.recordSnapshot,
             isAltPressed: props.editing.isAltPressed,
          }

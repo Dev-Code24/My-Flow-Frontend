@@ -9,7 +9,7 @@ export function useEditingKeyboardShortcuts(editing: EditingKeyboardShortcutsPro
 			return;
 		}
 
-		const { elements, selectedIds, dispatchWhiteBoardState, recordSnapshot, undo, redo, setIsAltPressed, setIsShiftPressed, setIsCtrlOrMetaPressed } = editing;
+		const { elements, selectedIds, dispatchWhiteBoardState, recordSnapshot, undo, redo, setIsAltPressed, setIsShiftPressed, setIsCtrlOrMetaPressed, historyLifecycle } = editing;
 		const changeTool = (tool: Tool): void => {
 			dispatchWhiteBoardState({ type: 'CHANGE_TOOL', tool });
 		};
@@ -17,7 +17,7 @@ export function useEditingKeyboardShortcuts(editing: EditingKeyboardShortcutsPro
       const handleKeyDown = (event: KeyboardEvent): void => {
          setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);
 
-         if (event.repeat) {
+         if (event.repeat || !event.key) {
             return;
          }
 
@@ -60,8 +60,18 @@ export function useEditingKeyboardShortcuts(editing: EditingKeyboardShortcutsPro
                }
 
                event.preventDefault();
+
+               if (historyLifecycle) {
+                  historyLifecycle.beginDocumentChange();
+               }
+
                recordSnapshot(elements);
                dispatchWhiteBoardState({ type: 'DELETE_SELECTED' });
+
+               if (historyLifecycle) {
+                  historyLifecycle.commitDocumentChange();
+               }
+
                return;
             }
 
@@ -88,6 +98,8 @@ export function useEditingKeyboardShortcuts(editing: EditingKeyboardShortcutsPro
       };
 
       const handleKeyUp = (event: KeyboardEvent): void => {
+         if (!event.key) { return; }
+
          const key = event.key.toLowerCase();
 
          setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);

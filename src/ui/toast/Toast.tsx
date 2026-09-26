@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { AlertCircle, CheckCircle2, Info, TriangleAlert, X } from 'lucide-react';
 
 import { ToastItem, ToastPosition, ToastVariant } from './toast.interface';
-import { toast } from './toast.service';
+import { ToastService } from './toast.service';
 import { getPositionClasses, getVariantClasses, groupToastsByPosition } from './toast.utils';
 
 interface ToastIconProps {
@@ -27,7 +27,7 @@ const TOAST_POSITIONS: ToastPosition[] = [
 ];
 
 export default function Toast() {
-	const toastList = useSyncExternalStore(toast.subscribe, toast.getSnapshot, () => EMPTY_TOAST_LIST);
+	const toastList = useSyncExternalStore(ToastService.subscribe, ToastService.getSnapshot, () => EMPTY_TOAST_LIST);
 
 	if (toastList.length === 0) {
 		return null;
@@ -71,8 +71,8 @@ function ToastCard({ toastItem }: ToastCardProps) {
 	return (
 		<div
 			role={variant === 'error' ? 'alert' : 'status'}
-			onMouseEnter={() => toast.pause(id)}
-			onMouseLeave={() => toast.resume(id)}
+			onMouseEnter={() => ToastService.pause(id)}
+			onMouseLeave={() => ToastService.resume(id)}
 			className={`pointer-events-auto w-full ${visible ? 'animate-toast-enter' : 'animate-toast-exit'}`}
 		>
 			<div className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 shadow-lg ${getVariantClasses(variant)}`}>
@@ -84,7 +84,7 @@ function ToastCard({ toastItem }: ToastCardProps) {
 
 				<button
 					type='button'
-					onClick={() => toast.dismiss(id)}
+					onClick={() => ToastService.dismiss(id)}
 					aria-label='Dismiss notification'
 					className='-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current'
 				>

@@ -1,8 +1,9 @@
 import { ShareModal } from '@/components';
 import { AuthAction } from '../auth';
+import { RoomCollaborationOptions } from "@/interfaces";
 
 interface EditableTopRightActionProps {
-  onStartSession: () => Promise<void>;
+  onStartSession: (options: RoomCollaborationOptions) => Promise<void>;
   onExportToLink: () => Promise<void>;
   isStartingSession: boolean;
   isExporting: boolean;

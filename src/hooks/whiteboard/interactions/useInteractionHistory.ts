@@ -14,6 +14,9 @@ interface UseInteractionHistoryParams {
 	documentRevision: number;
 	recordSnapshot: (snapshot: Element[]) => void;
 	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
+	onBeginDocumentChange: VoidFunction;
+	onCommitDocumentChange: VoidFunction;
+	onDiscardDocumentChange: VoidFunction;
 }
 
 interface UseInteractionHistoryResult {
@@ -30,6 +33,9 @@ export function useInteractionHistory({
 	documentRevision,
 	recordSnapshot,
 	dispatchWhiteBoardState,
+	onBeginDocumentChange,
+	onCommitDocumentChange,
+	onDiscardDocumentChange,
 }: UseInteractionHistoryParams): UseInteractionHistoryResult {
 	const snapshotRef = useRef<InteractionSnapshot | null>(null);
 
@@ -39,14 +45,21 @@ export function useInteractionHistory({
 			selectedIds: [...selectedIds],
 			documentRevision,
 		};
+		onBeginDocumentChange();
 	}
 
 	function commitDocumentChange(): void {
 		const snapshot = snapshotRef.current;
-		if (!snapshot) return;
+
+		if (!snapshot) {
+			return;
+		}
 
 		if (snapshot.documentRevision !== documentRevision) {
 			recordSnapshot(snapshot.elements);
+			onCommitDocumentChange();
+		} else {
+			onDiscardDocumentChange();
 		}
 
 		snapshotRef.current = null;
@@ -54,7 +67,10 @@ export function useInteractionHistory({
 
 	function restoreDocumentChange(): void {
 		const snapshot = snapshotRef.current;
-		if (!snapshot) return;
+
+		if (!snapshot) {
+			return;
+		}
 
 		dispatchWhiteBoardState({
 			type: 'RESTORE_INTERACTION_STATE',
@@ -62,6 +78,8 @@ export function useInteractionHistory({
 			selectedIds: snapshot.selectedIds,
 			documentRevision: snapshot.documentRevision,
 		});
+
+		onDiscardDocumentChange();
 
 		snapshotRef.current = null;
 	}

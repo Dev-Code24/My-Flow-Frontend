@@ -1,3 +1,6 @@
 export * from './states.interfaces';
 export * from './interactions.interfaces';
 export * from './whiteboard.interfaces';
+export * from './whiteboard-document.interfaces';
+export * from './collaborations.interfaces';
+export * from './history.interfaces';
