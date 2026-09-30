@@ -4,6 +4,7 @@ import { useCallback, useRef } from 'react';
 
 import { CollaborationHistoryEntryDraft, Element, HistoryElementChange } from '@/interfaces';
 import { areHistoryElementStatesEqual, getHistoryElementChanges } from '@/utils';
+import { generateUUID } from "@/lib/utils";
 
 interface UseCollaborationHistoryRecorderParams {
   onEntryCommitted: (entry: CollaborationHistoryEntryDraft) => void;
@@ -26,7 +27,7 @@ export function useCollaborationHistoryRecorder({
   const changesRef = useRef<Map<string, HistoryElementChange>>(new Map());
 
   const beginDocumentChange = useCallback((): void => {
-    activeEntryIdRef.current = crypto.randomUUID();
+    activeEntryIdRef.current = generateUUID();
     changesRef.current.clear();
   }, []);
 

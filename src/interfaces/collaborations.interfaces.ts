@@ -26,3 +26,9 @@ export interface CollaborationSnapshot {
   updatedAt: number;
   lastAccessedAt: number;
 }
+
+export interface DocumentMutationLifecycle {
+  beginMutation: (elementIds: string[]) => Promise<boolean>;
+  commitMutation: VoidFunction;
+  cancelMutation: VoidFunction;
+}

@@ -1,6 +1,7 @@
 import { Dispatch, useCallback } from 'react';
 
 import { Element, WhiteboardAction, WhiteboardDocumentOperations } from '@/interfaces';
+import { generateUUID } from "@/lib/utils";
 
 interface UseLocalWhiteboardDocumentParams {
   elements: Element[];
@@ -61,7 +62,7 @@ export function useLocalWhiteboardDocument({
         .filter((element) => ids.has(element.id))
         .map((element) => ({
           ...structuredClone(element),
-          id: crypto.randomUUID(),
+          id: generateUUID(),
         }));
 
       if (duplicates.length === 0) {

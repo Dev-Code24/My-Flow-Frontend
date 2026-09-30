@@ -2,7 +2,7 @@ import { Dispatch, RefObject, SetStateAction, MouseEvent as ReactMouseEvent } fr
 
 import {
    Coordinates2D,
-   DocumentHistoryLifecycle,
+   DocumentHistoryLifecycle, DocumentMutationLifecycle,
    Element,
    Interaction,
    SelectionBox,
@@ -32,6 +32,7 @@ interface EditableWhiteboardInteractionProps {
       recordSnapshot: (snapshot: Element[]) => void;
       isAltPressed: boolean;
       historyLifecycle?: DocumentHistoryLifecycle;
+      mutationLifecycle?: DocumentMutationLifecycle;
    };
 }
 

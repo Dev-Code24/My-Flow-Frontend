@@ -1,132 +1,188 @@
 import { KeyboardKeys } from '@/constants';
 import { EditingKeyboardShortcutsProps } from './interfaces';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Tool } from '@/interfaces';
 
-export function useEditingKeyboardShortcuts(editing: EditingKeyboardShortcutsProps | null): void {
-	useEffect(() => {
-		if (!editing) {
-			return;
-		}
+export function useEditingKeyboardShortcuts(editing : EditingKeyboardShortcutsProps | null) : void {
+  const isDeletingRef = useRef<boolean>(false);
 
-		const { elements, selectedIds, dispatchWhiteBoardState, recordSnapshot, undo, redo, setIsAltPressed, setIsShiftPressed, setIsCtrlOrMetaPressed, historyLifecycle } = editing;
-		const changeTool = (tool: Tool): void => {
-			dispatchWhiteBoardState({ type: 'CHANGE_TOOL', tool });
-		};
-		
-      const handleKeyDown = (event: KeyboardEvent): void => {
-         setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);
+  useEffect(() => {
+    if (!editing) {
+      return;
+    }
 
-         if (event.repeat || !event.key) {
+    const {
+      elements,
+      selectedIds,
+      dispatchWhiteBoardState,
+      recordSnapshot,
+      undo,
+      redo,
+      setIsAltPressed,
+      setIsShiftPressed,
+      setIsCtrlOrMetaPressed,
+      historyLifecycle,
+      mutationLifecycle,
+    } = editing;
+    const changeTool = (tool : Tool) : void => {
+      dispatchWhiteBoardState({type: 'CHANGE_TOOL', tool});
+    };
+
+    const handleKeyDown = (event : KeyboardEvent) : void => {
+      setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);
+
+      if (event.repeat || !event.key) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === KeyboardKeys.ALT) {
+        setIsAltPressed(true);
+        return;
+      }
+
+      const isModifierPressed = event.ctrlKey || event.metaKey;
+
+      if (isModifierPressed && key === KeyboardKeys.Z) {
+        event.preventDefault();
+
+        if (event.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+
+        return;
+      }
+
+      if (key === KeyboardKeys.SHIFT) {
+        setIsShiftPressed(true);
+      }
+
+      if (event.ctrlKey && key === KeyboardKeys.Y) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+
+      switch (key) {
+        case KeyboardKeys.DELETE:
+        case KeyboardKeys.BACKSPACE: {
+          if (selectedIds.length === 0) {
             return;
-         }
+          }
 
-         const key = event.key.toLowerCase();
+          event.preventDefault();
 
-         if (key === KeyboardKeys.ALT) {
-            setIsAltPressed(true);
+          void deleteSelectedElements();
+
+          return;
+        }
+
+        case KeyboardKeys.V: {
+          changeTool(Tool.SELECT);
+          return;
+        }
+
+        case KeyboardKeys.D: {
+          changeTool(Tool.DRAW_RECTANGLE);
+          return;
+        }
+
+        case KeyboardKeys.R: {
+          changeTool(Tool.DRAW_RHOMBUS);
+          return;
+        }
+
+        case KeyboardKeys.O: {
+          changeTool(Tool.DRAW_OVAL);
+          return;
+        }
+      }
+    };
+
+    const handleKeyUp = (event : KeyboardEvent) : void => {
+      if (!event.key) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);
+
+      if (key === KeyboardKeys.ALT) {
+        setIsAltPressed(false);
+      }
+
+      if (key === KeyboardKeys.SHIFT) {
+        setIsShiftPressed(false);
+      }
+    };
+
+    const resetEditingKeys = () : void => {
+      setIsAltPressed(false);
+      setIsShiftPressed(false);
+      setIsCtrlOrMetaPressed(false);
+    };
+
+    const deleteSelectedElements = async (): Promise<void> => {
+        if (selectedIds.length === 0 || isDeletingRef.current) {
+          return;
+        }
+
+        const elementIds = [ ...selectedIds ];
+
+        isDeletingRef.current = true;
+
+        let mutationStarted = false;
+
+        try {
+          const accepted = mutationLifecycle ? await mutationLifecycle.beginMutation(elementIds) : true;
+
+          if (!accepted) {
             return;
-         }
+          }
 
-         const isModifierPressed = event.ctrlKey || event.metaKey;
+          mutationStarted = true;
 
-         if (isModifierPressed && key === KeyboardKeys.Z) {
-            event.preventDefault();
+          if (historyLifecycle) {
+            historyLifecycle.beginDocumentChange();
+          }
 
-            if (event.shiftKey) {
-               redo();
-            } else {
-               undo();
-            }
+          recordSnapshot(elements);
 
-            return;
-         }
+          dispatchWhiteBoardState({
+            type: 'DELETE_SELECTED',
+            elementIds,
+          });
 
-         if (key === KeyboardKeys.SHIFT) {
-            setIsShiftPressed(true);
-         }
+          if (historyLifecycle) {
+            historyLifecycle.commitDocumentChange();
+          }
 
-         if (event.ctrlKey && key === KeyboardKeys.Y) {
-            event.preventDefault();
-            redo();
-            return;
-         }
+          if (mutationLifecycle) {
+            mutationLifecycle.commitMutation();
+          }
 
-         switch (key) {
-            case KeyboardKeys.DELETE:
-            case KeyboardKeys.BACKSPACE: {
-               if (selectedIds.length === 0) {
-                  return;
-               }
+          mutationStarted = false;
+        } finally {
+          if (mutationStarted && mutationLifecycle) {
+            mutationLifecycle.cancelMutation();
+          }
 
-               event.preventDefault();
-
-               if (historyLifecycle) {
-                  historyLifecycle.beginDocumentChange();
-               }
-
-               recordSnapshot(elements);
-               dispatchWhiteBoardState({ type: 'DELETE_SELECTED' });
-
-               if (historyLifecycle) {
-                  historyLifecycle.commitDocumentChange();
-               }
-
-               return;
-            }
-
-            case KeyboardKeys.V: {
-               changeTool(Tool.SELECT);
-               return;
-            }
-
-            case KeyboardKeys.D: {
-               changeTool(Tool.DRAW_RECTANGLE);
-               return;
-            }
-
-            case KeyboardKeys.R: {
-               changeTool(Tool.DRAW_RHOMBUS);
-               return;
-            }
-
-            case KeyboardKeys.O: {
-               changeTool(Tool.DRAW_OVAL);
-               return;
-            }
-         }
+          isDeletingRef.current = false;
+        }
       };
 
-      const handleKeyUp = (event: KeyboardEvent): void => {
-         if (!event.key) { return; }
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', resetEditingKeys);
 
-         const key = event.key.toLowerCase();
-
-         setIsCtrlOrMetaPressed(event.ctrlKey || event.metaKey);
-
-         if (key === KeyboardKeys.ALT) {
-            setIsAltPressed(false);
-         }
-
-         if (key === KeyboardKeys.SHIFT) {
-            setIsShiftPressed(false);
-         }
-      };
-
-      const resetEditingKeys = (): void => {
-         setIsAltPressed(false);
-         setIsShiftPressed(false);
-         setIsCtrlOrMetaPressed(false);
-      };
-
-      window.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('keyup', handleKeyUp);
-      window.addEventListener('blur', resetEditingKeys);
-
-      return () => {
-         window.removeEventListener('keydown', handleKeyDown);
-         window.removeEventListener('keyup', handleKeyUp);
-         window.removeEventListener('blur', resetEditingKeys);
-      };
-   }, [editing]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', resetEditingKeys);
+    };
+  }, [ editing ]);
 }

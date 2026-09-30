@@ -5,7 +5,7 @@ import * as Y from 'yjs';
 
 import { WsMessage, WsMessageType } from '@/lib/interfaces';
 import { WebSocketService } from '@/lib/websocket';
-import { base64ToUint8Array, uint8ArrayToBase64 } from '@/lib/utils';
+import { base64ToUint8Array, generateUUID, uint8ArrayToBase64 } from '@/lib/utils';
 import { ToastService } from '@/ui/toast';
 import { CollaborationHistoryEntryDraft, RoomHistoryState } from "@/interfaces";
 
@@ -100,7 +100,7 @@ export function useWebsocket({
             service.send({
               type: WsMessageType.YJS_SYNC_STEP_2,
               message: {
-                updateId: crypto.randomUUID(),
+                updateId: generateUUID(),
                 update: uint8ArrayToBase64(missingUpdate),
               },
             });
@@ -149,7 +149,7 @@ export function useWebsocket({
       service.send({
         type: WsMessageType.YJS_UPDATE,
         message: {
-          updateId: crypto.randomUUID(),
+          updateId: generateUUID(),
           update: uint8ArrayToBase64(update),
         },
       });
@@ -188,7 +188,7 @@ export function useWebsocket({
     service.send({
       type: WsMessageType.UNDO_REQUEST,
       message: {
-        requestId: crypto.randomUUID(),
+        requestId: generateUUID(),
         expectedVersion:
         historyState.historyVersion,
       },
@@ -198,11 +198,26 @@ export function useWebsocket({
     historyState,
   ]);
 
+  const beginMutation = useCallback((elementIds: string[]): Promise<boolean> => {
+      return service.beginEdit(elementIds);
+    }, [service]);
+
+  const commitMutation = useCallback((): void => {
+      service.endEdit();
+    }, [service]);
+
+  const cancelMutation = useCallback((): void => {
+      service.cancelEdit();
+    }, [service]);
+
   return {
     status,
     initialSyncStatus,
     historyState,
     commitHistoryEntry,
     undo,
+    beginMutation,
+    commitMutation,
+    cancelMutation,
   };
 }

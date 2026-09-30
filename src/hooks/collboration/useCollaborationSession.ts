@@ -2,7 +2,7 @@
 
 import { useCallback, useRef } from 'react';
 
-import { CollaborationEntryMode, Element } from '@/interfaces';
+import { CollaborationEntryMode, DocumentMutationLifecycle, Element } from '@/interfaces';
 import { seedYDoc } from '@/lib/yjs';
 import { useWebsocket } from '@/hooks/websocket';
 import { useCollaborationDocument } from './useCollaborationDocument';
@@ -39,11 +39,20 @@ export function useCollaborationSession({
     historyState,
     commitHistoryEntry,
     undo,
+    beginMutation,
+    commitMutation,
+    cancelMutation,
   } = useWebsocket({
     wsToken,
     document,
     onInitialSyncReady: handleInitialSyncReady,
   });
+
+  const mutationLifecycle: DocumentMutationLifecycle = {
+    beginMutation,
+    commitMutation,
+    cancelMutation,
+  };
 
   const isPersistenceEnabled = initialSyncStatus === 'completed' || initialSyncStatus === 'not-required';
 
@@ -57,6 +66,7 @@ export function useCollaborationSession({
     historyState,
     commitHistoryEntry,
     undo,
+    mutationLifecycle,
     addElement,
     updateElement,
     removeElement,

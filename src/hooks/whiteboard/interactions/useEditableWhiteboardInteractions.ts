@@ -2,7 +2,7 @@ import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, useRef } from 'reac
 
 import {
 	Coordinates2D,
-	DocumentHistoryLifecycle,
+	DocumentHistoryLifecycle, DocumentMutationLifecycle,
 	Element,
 	Interaction,
 	MarqueeSelectionMode,
@@ -42,7 +42,8 @@ export interface EditableWhiteboardInteractionsParams {
 	recordSnapshot: (snapshot: Element[]) => void;
 	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
 	isAltPressed?: boolean;
-	historyLifecycle?: DocumentHistoryLifecycle
+	historyLifecycle?: DocumentHistoryLifecycle;
+	mutationLifecycle?: DocumentMutationLifecycle;
 }
 
 const NOOP_INTERACTIONS: UseWhiteboardInteractionsResult = {
@@ -56,6 +57,12 @@ const EMPTY_HISTORY_LIFECYCLE: DocumentHistoryLifecycle = {
 	beginDocumentChange: () => {},
 	commitDocumentChange: () => {},
 	discardDocumentChange: () => {},
+};
+
+const EMPTY_MUTATION_LIFECYCLE: DocumentMutationLifecycle = {
+	beginMutation: async (): Promise<boolean> => true,
+	commitMutation: () => {},
+	cancelMutation: () => {},
 };
 
 const EMPTY_EDITABLE_INTERACTION_PROPS: EditableWhiteboardInteractionsParams = {
@@ -74,6 +81,7 @@ const EMPTY_EDITABLE_INTERACTION_PROPS: EditableWhiteboardInteractionsParams = {
 	dispatchWhiteBoardState: () => {},
 	isAltPressed: false,
 	historyLifecycle: EMPTY_HISTORY_LIFECYCLE,
+	mutationLifecycle: EMPTY_MUTATION_LIFECYCLE,
 };
 
 export function useEditableWhiteboardInteractions(
@@ -98,7 +106,8 @@ export function useEditableWhiteboardInteractions(
 		recordSnapshot,
 		dispatchWhiteBoardState,
 		isAltPressed = false,
-		historyLifecycle = EMPTY_HISTORY_LIFECYCLE
+		historyLifecycle = EMPTY_HISTORY_LIFECYCLE,
+		mutationLifecycle = EMPTY_MUTATION_LIFECYCLE,
 	} = resolvedProps;
 
 	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
@@ -127,6 +136,7 @@ export function useEditableWhiteboardInteractions(
 		zoom,
 		dispatchWhiteBoardState,
 		beginDocumentChange: history.beginDocumentChange,
+		mutationLifecycle,
 	});
 
 	const resizing = useResizeInteraction({
@@ -136,14 +146,16 @@ export function useEditableWhiteboardInteractions(
 		isShiftPressed,
 		isAltPressed,
 		dispatchWhiteBoardState,
-		beginDocumentChange: history.beginDocumentChange,
+		beginDocumentChange:
+		history.beginDocumentChange,
+		mutationLifecycle,
 	});
 
 	if (!props) {
 		return NOOP_INTERACTIONS;
 	}
 
-	function handleMouseDown(event: ReactMouseEvent<HTMLCanvasElement>): void {
+	async function handleMouseDown(event: ReactMouseEvent<HTMLCanvasElement>): Promise<void> {
 		if (event.button !== 0) return;
 
 		const canvas = canvasRef.current;
@@ -167,7 +179,9 @@ export function useEditableWhiteboardInteractions(
 			return;
 		}
 
-		if (resizing.tryStartResize(canvasPoint)) { return; }
+		if (await resizing.tryStartResize(canvasPoint)) {
+			return;
+		}
 
 		const clickedElement = findTopmostElementAtPosition(elements, context, point.x, point.y);
 		const modifierPressed = event.ctrlKey || event.metaKey || isCtrlOrMetaPressed;
@@ -188,7 +202,7 @@ export function useEditableWhiteboardInteractions(
 		});
 	}
 
-	function handleMouseMove(event: ReactMouseEvent<HTMLCanvasElement>): void {
+	async function handleMouseMove(event: ReactMouseEvent<HTMLCanvasElement>): Promise<void> {
 		const canvas = canvasRef.current;
 
 		if (!canvas) {
@@ -210,7 +224,7 @@ export function useEditableWhiteboardInteractions(
 		}
 
 		if (dragging.pendingElementInteraction.current && !dragging.hasStartedMoving.current) {
-			const handled = dragging.tryStartMoving(rawPoint, isAltPressed, event.altKey);
+			const handled = await dragging.tryStartMoving(rawPoint, isAltPressed, event.altKey);
 
 			if (handled) {
 				if (dragging.hasStartedMoving.current) {
@@ -269,6 +283,7 @@ export function useEditableWhiteboardInteractions(
 
 			if (!context) {
 				history.commitDocumentChange();
+				mutationLifecycle.commitMutation();
 				return;
 			}
 
@@ -299,6 +314,7 @@ export function useEditableWhiteboardInteractions(
 		}
 
 		history.commitDocumentChange();
+		mutationLifecycle.commitMutation();
 	}
 
 	function cancelInteraction(): void {
@@ -330,6 +346,7 @@ export function useEditableWhiteboardInteractions(
 		resizing.resetResize();
 		resetMarqueeState();
 		history.clearDocumentChange();
+		mutationLifecycle.cancelMutation();
 
 		const canvas = canvasRef.current;
 		if (canvas) {

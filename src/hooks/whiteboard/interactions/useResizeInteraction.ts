@@ -1,6 +1,15 @@
 import { Dispatch, RefObject, useRef, useState } from 'react';
 
-import { BoundsResizeHandle, Coordinates2D, Element, Interaction, ResizeHandle, Shape, WhiteboardAction } from '@/interfaces';
+import {
+	BoundsResizeHandle,
+	Coordinates2D,
+	DocumentMutationLifecycle,
+	Element,
+	Interaction,
+	ResizeHandle,
+	Shape,
+	WhiteboardAction,
+} from '@/interfaces';
 import {
 	constrainResizeToAspectRatio,
 	getCursorForHandle,
@@ -21,12 +30,13 @@ interface UseResizeInteractionParams {
 	isAltPressed: boolean;
 	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
 	beginDocumentChange: VoidFunction;
+	mutationLifecycle: DocumentMutationLifecycle;
 }
 
 interface UseResizeInteractionResult {
 	activeHandle: ResizeHandle;
 	hasActiveResize: boolean;
-	tryStartResize: (point: Coordinates2D) => boolean;
+	tryStartResize: (point: Coordinates2D) => Promise<boolean>;
 	resize: (point: Coordinates2D) => boolean;
 	resetResize: VoidFunction;
 }
@@ -39,17 +49,46 @@ export function useResizeInteraction({
 	isAltPressed,
 	dispatchWhiteBoardState,
 	beginDocumentChange,
+	mutationLifecycle,
 }: UseResizeInteractionParams): UseResizeInteractionResult {
-	const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
-	const [resizeAnchor, setResizeAnchor] = useState<Coordinates2D | null>(null);
+	const isStartingResize = useRef(false);
+	const resizeRequestVersion = useRef(0);
 	const resizeStartElement = useRef<Element | null>(null);
 
-	function tryStartResize(point: Coordinates2D): boolean {
-		if (!selectedElement) return false;
+	const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
+	const [resizeAnchor, setResizeAnchor] = useState<Coordinates2D | null>(null);
+
+	async function tryStartResize(point: Coordinates2D): Promise<boolean> {
+		if (!selectedElement || isStartingResize.current) {
+			return false;
+		}
 
 		const handle = getHandleAtPosition(point.x, point.y, selectedElement, zoom);
 
-		if (!handle) return false;
+		if (!handle) {
+			return false;
+		}
+
+		const requestVersion = ++resizeRequestVersion.current;
+
+		isStartingResize.current = true;
+
+		let accepted = false;
+
+		try {
+			accepted = await mutationLifecycle.beginMutation([selectedElement.id]);
+		} finally {
+			isStartingResize.current = false;
+		}
+
+		if (!accepted) {
+			return true;
+		}
+
+		if (resizeRequestVersion.current !== requestVersion) {
+			mutationLifecycle.cancelMutation();
+			return true;
+		}
 
 		beginDocumentChange();
 		resizeStartElement.current = structuredClone(selectedElement);
@@ -65,6 +104,7 @@ export function useResizeInteraction({
 		});
 
 		const canvas = canvasRef.current;
+
 		if (canvas) {
 			canvas.style.cursor = getCursorForHandle(selectedElement.angle, handle);
 		}
@@ -147,8 +187,13 @@ export function useResizeInteraction({
 	}
 
 	function resetResize(): void {
+		++resizeRequestVersion.current;
+
+		isStartingResize.current = false;
+
 		setActiveHandle(null);
 		setResizeAnchor(null);
+
 		resizeStartElement.current = null;
 	}
 

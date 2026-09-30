@@ -2,6 +2,7 @@ import * as Y from "yjs";
 
 import { Element, Shape } from "@/interfaces";
 import { addElementToYDoc, getElementsFromYDoc, getYElements, removeElementFromYDoc, seedYDoc, updateYElement } from "./element.utils";
+import { generateUUID } from "@/lib/utils";
 
 export function validateYjsElementModel(): void {
 	const documentA = new Y.Doc();
@@ -10,8 +11,8 @@ export function validateYjsElementModel(): void {
 	const elementsA = getYElements(documentA);
 	const elementsB = getYElements(documentB);
 
-	const rectangleId = crypto.randomUUID();
-	const arrowId = crypto.randomUUID();
+	const rectangleId = generateUUID();
+	const arrowId = generateUUID();
 
 	const initialElements: Element[] = [
 		{
@@ -94,7 +95,7 @@ function validateInitialSynchronization(elementsB: ReturnType<typeof getYElement
 
 function validateElementAddition(elementsA: ReturnType<typeof getYElements>, elementsB: ReturnType<typeof getYElements>): void {
 	const oval: Element = {
-		id: crypto.randomUUID(),
+		id: generateUUID(),
 		x: 800,
 		y: 300,
 		width: 150,
@@ -155,7 +156,7 @@ function validateArrowCurve(elementsA: ReturnType<typeof getYElements>, elements
 
 function validateElementDeletion(elementsA: ReturnType<typeof getYElements>, elementsB: ReturnType<typeof getYElements>): void {
 	const temporaryElement: Element = {
-		id: crypto.randomUUID(),
+		id: generateUUID(),
 		x: 0,
 		y: 0,
 		width: 100,

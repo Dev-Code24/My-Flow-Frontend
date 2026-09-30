@@ -56,11 +56,11 @@ export type WhiteboardAction =
       dx: number;
       dy: number;
    }
-   | {
+  | {
       type: 'DUPLICATE_SELECTED';
       elementIds: string[];
-   }
-   | {
+      duplicateIds: Record<string, string>;
+   } | {
       type: 'RESTORE_INTERACTION_STATE';
       elements: Element[];
       selectedIds: string[];
@@ -78,8 +78,8 @@ export type WhiteboardAction =
    }
    | {
       type: 'DELETE_SELECTED';
-   }
-   | {
+      elementIds?: string[];
+   } | {
       type: 'SYNC_DOCUMENT_ELEMENTS';
       elements: Element[];
    }

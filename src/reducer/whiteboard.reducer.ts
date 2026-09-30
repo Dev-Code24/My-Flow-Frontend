@@ -1,5 +1,6 @@
 import { Element, Interaction, Shape, Tool, WhiteboardAction, WhiteboardState } from '@/interfaces';
 import { isElementInSelection } from '@/utils';
+import { generateUUID } from "@/lib/utils";
 
 export function whiteboardReducer(state: WhiteboardState, action: WhiteboardAction): WhiteboardState {
    switch (action.type) {
@@ -134,11 +135,11 @@ export function whiteboardReducer(state: WhiteboardState, action: WhiteboardActi
 
          const elementIds = new Set(action.elementIds);
          const duplicates = state.elements
-            .filter((element) => elementIds.has(element.id))
-            .map((element) => ({
-               ...structuredClone(element),
-               id: crypto.randomUUID(),
-            }));
+           .filter((element) => elementIds.has(element.id))
+           .map((element) => ({
+              ...structuredClone(element),
+              id: action.duplicateIds[element.id],
+           }));
 
          if (duplicates.length === 0) {
             return state;
@@ -146,7 +147,10 @@ export function whiteboardReducer(state: WhiteboardState, action: WhiteboardActi
 
          return {
             ...state,
-            elements: [...state.elements, ...duplicates],
+            elements: [
+               ...state.elements,
+               ...duplicates,
+            ],
             selectedIds: duplicates.map((element) => element.id),
             documentRevision: state.documentRevision + 1,
          };
@@ -187,16 +191,18 @@ export function whiteboardReducer(state: WhiteboardState, action: WhiteboardActi
       }
 
       case 'DELETE_SELECTED': {
-         if (state.selectedIds.length === 0) {
+         const elementIds = action.elementIds ?? state.selectedIds;
+
+         if (elementIds.length === 0) {
             return state;
          }
 
+         const elementIdSet = new Set(elementIds);
+
          return {
             ...state,
-            elements: state.elements.filter(
-               (element) => !state.selectedIds.includes(element.id)
-            ),
-            selectedIds: [],
+            elements: state.elements.filter((element) => !elementIdSet.has(element.id)),
+            selectedIds: state.selectedIds.filter((id) => !elementIdSet.has(id)),
             documentRevision: state.documentRevision + 1,
          };
       }

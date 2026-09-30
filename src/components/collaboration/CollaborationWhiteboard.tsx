@@ -62,6 +62,7 @@ export default function CollaborationWhiteboard({
     historyState,
     commitHistoryEntry,
     undo,
+    mutationLifecycle,
   } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
 
   const { beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
@@ -127,7 +128,7 @@ export default function CollaborationWhiteboard({
     isSpacePressed,
     setPan,
     dispatchWhiteBoardState: collaborativeDispatch,
-    editing: { documentRevision, recordSnapshot, isAltPressed, historyLifecycle },
+    editing: { documentRevision, recordSnapshot, isAltPressed, historyLifecycle, mutationLifecycle },
   });
 
   useKeyboardShortcuts({
@@ -146,6 +147,7 @@ export default function CollaborationWhiteboard({
       undo,
       redo,
       historyLifecycle,
+      mutationLifecycle,
     },
   });
 

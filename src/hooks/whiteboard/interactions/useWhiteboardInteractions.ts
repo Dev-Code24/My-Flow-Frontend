@@ -34,6 +34,7 @@ export function useWhiteboardInteractions(props: UseWhiteboardInteractionsParams
             dispatchWhiteBoardState: props.dispatchWhiteBoardState,
             documentRevision: props.editing.documentRevision,
             historyLifecycle: props.editing.historyLifecycle,
+            mutationLifecycle: props.editing.mutationLifecycle,
             recordSnapshot: props.editing.recordSnapshot,
             isAltPressed: props.editing.isAltPressed,
          }
