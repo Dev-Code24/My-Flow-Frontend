@@ -55,12 +55,12 @@ export enum WsMessageType {
   HISTORY_ENTRY_COMMIT = 'HISTORY_ENTRY_COMMIT',
   ROOM_HISTORY_STATE = 'ROOM_HISTORY_STATE',
   UNDO_REQUEST = 'UNDO_REQUEST',
+  REDO_REQUEST = 'REDO_REQUEST',
   EDIT_BEGIN = 'EDIT_BEGIN',
   EDIT_ACCEPTED = 'EDIT_ACCEPTED',
   EDIT_REJECTED = 'EDIT_REJECTED',
   EDIT_KEEP_ALIVE = 'EDIT_KEEP_ALIVE',
   EDIT_END = 'EDIT_END',
-
 }
 
 export interface ParticipantDetails {
@@ -92,6 +92,7 @@ export type WsMessageMap = {
   [WsMessageType.HISTORY_ENTRY_COMMIT]: CollaborationHistoryEntryDraft;
   [WsMessageType.ROOM_HISTORY_STATE]: RoomHistoryState;
   [WsMessageType.UNDO_REQUEST]: HistoryNavigationRequest;
+  [WsMessageType.REDO_REQUEST]: HistoryNavigationRequest;
   [WsMessageType.EDIT_BEGIN]: EditBeginRequest;
   [WsMessageType.EDIT_ACCEPTED]: EditAccepted;
   [WsMessageType.EDIT_REJECTED]: EditRejected;

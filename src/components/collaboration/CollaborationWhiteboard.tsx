@@ -16,7 +16,7 @@ import { useCanvasPreventDefaultEvents, useCollaborativeWhiteboardDispatch, useK
 } from '@/hooks/whiteboard';
 import Whiteboard from '../whiteboard';
 import { useCollaborationHistoryRecorder, useCollaborationSession } from "@/hooks/collboration";
-import { ShapesNavbar } from "@/components";
+import { HistoryControls, ShapesNavbar } from "@/components";
 
 interface CollaborationWhiteboardProps {
   roomId: string;
@@ -62,6 +62,7 @@ export default function CollaborationWhiteboard({
     historyState,
     commitHistoryEntry,
     undo,
+    redo,
     mutationLifecycle,
   } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
 
@@ -102,10 +103,6 @@ export default function CollaborationWhiteboard({
 
   // Temporary history implementation.
   const { recordSnapshot } = useWhiteboardHistory({ elements, dispatchWhiteBoardState: collaborativeDispatch });
-
-  const redo = (): void => {
-    // Global collaborative redo will be implemented next.
-  };
 
   const historyLifecycle = {
     beginDocumentChange,
@@ -177,6 +174,14 @@ export default function CollaborationWhiteboard({
       onZoomOut={zoomOut}
       onResetZoom={resetZoom}
       onBackToContent={backToContent}
+      bottomLeftAction={
+        <HistoryControls
+          canRedo={historyState.canRedo}
+          canUndo={historyState.canUndo}
+          onRedo={redo}
+          onUndo={undo}
+        />
+      }
       toolbar={
         <ShapesNavbar
           tool={tool}

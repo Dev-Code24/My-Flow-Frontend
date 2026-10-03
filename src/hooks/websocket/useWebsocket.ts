@@ -193,10 +193,22 @@ export function useWebsocket({
         historyState.historyVersion,
       },
     });
-  }, [
-    service,
-    historyState,
-  ]);
+  }, [service, historyState]);
+
+  const redo = useCallback((): void => {
+    if (!historyState.canRedo) {
+      return;
+    }
+
+    service.send({
+      type: WsMessageType.REDO_REQUEST,
+      message: {
+        requestId: generateUUID(),
+        expectedVersion:
+        historyState.historyVersion,
+      },
+    });
+  }, [service, historyState]);
 
   const beginMutation = useCallback((elementIds: string[]): Promise<boolean> => {
       return service.beginEdit(elementIds);
@@ -216,6 +228,7 @@ export function useWebsocket({
     historyState,
     commitHistoryEntry,
     undo,
+    redo,
     beginMutation,
     commitMutation,
     cancelMutation,
