@@ -10,7 +10,7 @@ import { ToastService } from '@/ui/toast';
 import { CollaborationHistoryEntryDraft, RoomHistoryState } from "@/interfaces";
 
 export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
-export type InitialSyncStatus = 'waiting' | 'syncing' | 'completed' | 'not-required';
+export type InitialSyncStatus = 'waiting' | 'syncing' | 'completed';
 
 interface UseCollaborationWebSocketParams {
   wsToken: string;
@@ -23,7 +23,6 @@ export function useWebsocket({
   document,
   onInitialSyncReady,
 }: UseCollaborationWebSocketParams) {
-  const isInitialSyncPendingRef = useRef<boolean>(false);
   const onInitialSyncReadyRef = useRef(onInitialSyncReady);
   const [status, setStatus] = useState<WebSocketStatus>('connecting');
   const [initialSyncStatus, setInitialSyncStatus] = useState<InitialSyncStatus>('waiting');
@@ -41,8 +40,6 @@ export function useWebsocket({
   }, [onInitialSyncReady]);
 
   useEffect(() => {
-    isInitialSyncPendingRef.current = false;
-
     const socket = service.connect(wsToken);
 
     const handleOpen = (): void => {
@@ -63,64 +60,21 @@ export function useWebsocket({
     const unsubscribe = service.subscribe((message: WsMessage) => {
         switch (message.type) {
           case WsMessageType.CONNECTION_ESTABLISHED: {
-            if (message.message.syncRequired) {
-              isInitialSyncPendingRef.current = true;
-              setInitialSyncStatus('syncing');
-            } else {
-              setInitialSyncStatus('not-required');
-
-              if (onInitialSyncReadyRef.current) {
-                onInitialSyncReadyRef.current();
-              }
-            }
+            setInitialSyncStatus('syncing');
 
             return;
           }
 
-          case WsMessageType.YJS_SYNC_REQUEST: {
-            const stateVector = Y.encodeStateVector(document);
-
-            service.send({
-              type: WsMessageType.YJS_SYNC_STEP_1,
-              message: {
-                peerParticipantId:
-                message.message.peerParticipantId,
-                stateVector:
-                  uint8ArrayToBase64(stateVector),
-              },
-            });
-
-            return;
-          }
-
-          case WsMessageType.YJS_SYNC_STEP_1: {
-            const peerStateVector = base64ToUint8Array(message.message.stateVector);
-            const missingUpdate = Y.encodeStateAsUpdate(document, peerStateVector);
-
-            service.send({
-              type: WsMessageType.YJS_SYNC_STEP_2,
-              message: {
-                updateId: generateUUID(),
-                update: uint8ArrayToBase64(missingUpdate),
-              },
-            });
-
-            return;
-          }
-
-          case WsMessageType.YJS_SYNC_STEP_2: {
+          case WsMessageType.YJS_SYNC: {
             const update = base64ToUint8Array(message.message.update);
+
             Y.applyUpdate(document, update, service);
 
-            if (isInitialSyncPendingRef.current) {
-              isInitialSyncPendingRef.current = false;
-
-              if (onInitialSyncReadyRef.current) {
-                onInitialSyncReadyRef.current();
-              }
-
-              setInitialSyncStatus('completed');
+            if (onInitialSyncReadyRef.current) {
+              onInitialSyncReadyRef.current();
             }
+
+            setInitialSyncStatus('completed');
 
             return;
           }
@@ -161,8 +115,6 @@ export function useWebsocket({
     document.on('update', handleDocumentUpdate);
 
     return () => {
-      isInitialSyncPendingRef.current = false;
-
       unsubscribe();
 
       document.off('update', handleDocumentUpdate);

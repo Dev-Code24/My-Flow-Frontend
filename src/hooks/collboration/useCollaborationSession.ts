@@ -55,7 +55,7 @@ export function useCollaborationSession({
     cancelMutation,
   };
 
-  const isPersistenceEnabled = initialSyncStatus === 'completed' || initialSyncStatus === 'not-required';
+  const isPersistenceEnabled = initialSyncStatus === 'completed';
 
   useCollaborationSnapshot({ roomId, elements, enabled: isPersistenceEnabled });
 
