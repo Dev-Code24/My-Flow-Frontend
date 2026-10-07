@@ -10,8 +10,4 @@ export enum INDEXED_DB_CONSTANTS {
    COLLABORATION_SNAPSHOT_STORE = 'snapshots',
 }
 
-export enum SESSION_STORAGE_CONSTANTS {
-   COLLABORATION_WS_TOKEN_PREFIX = 'my-flow-ws-token',
-}
-
 export * from './websocket.constants';

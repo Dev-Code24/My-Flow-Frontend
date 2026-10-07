@@ -7,10 +7,8 @@ import { LoaderCircle } from 'lucide-react';
 import { useJoinRoom } from '@/hooks/api';
 import { CollaborationEntryMode, CollaborationParticipant, CollaborationSnapshot } from '@/interfaces';
 import {
-  cleanupCollaborationSnapshots,
-  deleteCollaborationRoomEntry, getCollaborationParticipant, getCollaborationRoomEntry, getCollaborationWsToken,
-  getValidCollaborationSnapshot,
-  saveCollaborationParticipant, saveCollaborationWsToken, touchCollaborationSnapshot,
+  cleanupCollaborationSnapshots, deleteCollaborationRoomEntry, getCollaborationParticipant, getCollaborationRoomEntry,
+  getValidCollaborationSnapshot, saveCollaborationParticipant, touchCollaborationSnapshot,
 } from '@/utils';
 import { JoinCollaborationModal, CollaborationWhiteboard, RejoinCollaborationModal } from "@/components";
 import { useAuth } from "@/hooks/auth";
@@ -29,6 +27,7 @@ export default function CollaborationRoomPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cachedSnapshot, setCachedSnapshot] = useState<CollaborationSnapshot | null>(null);
   const [entryMode, setEntryMode] = useState<CollaborationEntryMode | null>(null);
+  const [wsToken, setWsToken] = useState<string | null>(null);
 
   const prepareCollaborationEntry = useCallback(async (): Promise<void> => {
     const snapshot = await getValidCollaborationSnapshot(room_id);
@@ -61,7 +60,7 @@ export default function CollaborationRoomPage() {
 
       await saveCollaborationParticipant(collaborationParticipant);
 
-      saveCollaborationWsToken(room_id, joinResponse.wsToken);
+      setWsToken(joinResponse.wsToken);
 
       await deleteCollaborationRoomEntry(room_id);
 
@@ -82,14 +81,6 @@ export default function CollaborationRoomPage() {
       try {
         await cleanupCollaborationSnapshots(room_id);
         const existingParticipant = await getCollaborationParticipant(room_id);
-        const existingWsToken = getCollaborationWsToken(room_id);
-
-        if (existingParticipant && existingWsToken) {
-          setParticipant(existingParticipant);
-          await prepareCollaborationEntry();
-
-          return;
-        }
 
         if (existingParticipant) {
           const joined = await joinAndInitialize(existingParticipant.displayName);
@@ -213,8 +204,6 @@ export default function CollaborationRoomPage() {
       </main>
     );
   }
-
-  const wsToken = getCollaborationWsToken(room_id);
 
   if (!wsToken) {
     return (
