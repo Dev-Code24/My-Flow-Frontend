@@ -31,15 +31,12 @@ export default function CollaborationWhiteboard({
   entryMode,
   cachedElements,
 }: CollaborationWhiteboardProps) {
-  const mode: WhiteboardMode = 'editable';
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [isShiftPressed, setIsShiftPressed] = useState<boolean>(false);
   const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
   const [isAltPressed, setIsAltPressed] = useState<boolean>(false);
   const [isCtrlOrMetaPressed, setIsCtrlOrMetaPressed] = useState<boolean>(false);
-  const [collaborationInitialElements] = useState<Element[]>([]);
 
   const [whiteBoardState, dispatchWhiteBoardState] = useReducer<WhiteboardState, [action: WhiteboardAction]>(whiteboardReducer, initialWhiteBoardState);
 
@@ -55,6 +52,7 @@ export default function CollaborationWhiteboard({
   const {
     document,
     elements: collaborationElements,
+    initialSyncStatus,
     addElement,
     updateElement,
     removeElement,
@@ -65,6 +63,9 @@ export default function CollaborationWhiteboard({
     redo,
     mutationLifecycle,
   } = useCollaborationSession({ roomId, wsToken, entryMode, cachedElements });
+
+  const isCollaborationReady = initialSyncStatus === 'completed';
+  const mode: WhiteboardMode = isCollaborationReady ? 'editable' : 'readonly';
 
   const { beginDocumentChange, recordDocumentMutation, commitDocumentChange, discardDocumentChange } = useCollaborationHistoryRecorder({
     onEntryCommitted: commitHistoryEntry,
@@ -176,8 +177,8 @@ export default function CollaborationWhiteboard({
       onBackToContent={backToContent}
       bottomLeftAction={
         <HistoryControls
-          canRedo={historyState.canRedo}
-          canUndo={historyState.canUndo}
+          canRedo={ isCollaborationReady && historyState.canRedo }
+          canUndo={ isCollaborationReady && historyState.canUndo }
           onRedo={redo}
           onUndo={undo}
         />

@@ -1,6 +1,6 @@
 // TODO Remove these imports from here, or put the interfaces in this file somewhere
 //  else this is shared logic
-import { CollaborationHistoryEntryDraft, RoomHistoryState } from "@/interfaces";
+import { CollaborationHistoryEntryDraft, RoomHistoryState, Element } from "@/interfaces";
 
 interface YjsUpdatePayload {
   updateId: string;
@@ -47,6 +47,18 @@ export interface ActiveEdit {
   >;
 }
 
+export type ContinueImportPayload =
+  | {
+  action: 'request';
+  requestId: string;
+  elements: Element[];
+}
+  | {
+  action: 'result';
+  requestId: string;
+  status: 'completed' | 'failed';
+};
+
 export enum WsMessageType {
   CONNECTION_ESTABLISHED = 'CONNECTION_ESTABLISHED',
   USER_JOINED = 'USER_JOINED',
@@ -54,6 +66,7 @@ export enum WsMessageType {
   ROOM_STATE = 'ROOM_STATE',
   YJS_SYNC = 'YJS_SYNC',
   YJS_UPDATE = 'YJS_UPDATE',
+  CONTINUE_IMPORT = 'CONTINUE_IMPORT',
   HISTORY_ENTRY_COMMIT = 'HISTORY_ENTRY_COMMIT',
   ROOM_HISTORY_STATE = 'ROOM_HISTORY_STATE',
   UNDO_REQUEST = 'UNDO_REQUEST',
@@ -82,7 +95,8 @@ export type WsMessageMap = {
     participants: ParticipantDetails[];
   };
   [WsMessageType.YJS_SYNC]: YjsSyncPayload;
-  [WsMessageType.YJS_UPDATE]: YjsUpdatePayload
+  [WsMessageType.YJS_UPDATE]: YjsUpdatePayload;
+  [WsMessageType.CONTINUE_IMPORT]: ContinueImportPayload;
   [WsMessageType.HISTORY_ENTRY_COMMIT]: CollaborationHistoryEntryDraft;
   [WsMessageType.ROOM_HISTORY_STATE]: RoomHistoryState;
   [WsMessageType.UNDO_REQUEST]: HistoryNavigationRequest;

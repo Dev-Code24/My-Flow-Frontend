@@ -7,23 +7,27 @@ import { WsMessage, WsMessageType } from '@/lib/interfaces';
 import { WebSocketService } from '@/lib/websocket';
 import { base64ToUint8Array, generateUUID, uint8ArrayToBase64 } from '@/lib/utils';
 import { ToastService } from '@/ui/toast';
-import { CollaborationHistoryEntryDraft, RoomHistoryState } from "@/interfaces";
+import { CollaborationHistoryEntryDraft, RoomHistoryState, Element } from "@/interfaces";
 
 export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
-export type InitialSyncStatus = 'waiting' | 'syncing' | 'completed';
+export type InitialSyncStatus = 'waiting' | 'syncing' | 'completed' | 'failed';
 
 interface UseCollaborationWebSocketParams {
   wsToken: string;
   document: Y.Doc;
-  onInitialSyncReady?: () => void;
+  continueImport?: {
+    requestId: string;
+    elements: Element[];
+  };
 }
 
 export function useWebsocket({
   wsToken,
   document,
-  onInitialSyncReady,
+  continueImport,
 }: UseCollaborationWebSocketParams) {
-  const onInitialSyncReadyRef = useRef(onInitialSyncReady);
+  const continueImportRef = useRef(continueImport);
+  const hasCompletedContinueImportRef = useRef<boolean>(false);
   const [status, setStatus] = useState<WebSocketStatus>('connecting');
   const [initialSyncStatus, setInitialSyncStatus] = useState<InitialSyncStatus>('waiting');
   const [service] = useState(() => new WebSocketService());
@@ -36,8 +40,8 @@ export function useWebsocket({
   });
 
   useEffect(() => {
-    onInitialSyncReadyRef.current = onInitialSyncReady;
-  }, [onInitialSyncReady]);
+    continueImportRef.current = continueImport;
+  }, [continueImport]);
 
   useEffect(() => {
     const socket = service.connect(wsToken);
@@ -70,11 +74,22 @@ export function useWebsocket({
 
             Y.applyUpdate(document, update, service);
 
-            if (onInitialSyncReadyRef.current) {
-              onInitialSyncReadyRef.current();
+            const pendingContinueImport = continueImportRef.current;
+
+            if (!pendingContinueImport || hasCompletedContinueImportRef.current) {
+              setInitialSyncStatus('completed');
+
+              return;
             }
 
-            setInitialSyncStatus('completed');
+            service.send({
+              type: WsMessageType.CONTINUE_IMPORT,
+              message: {
+                action: 'request',
+                requestId: pendingContinueImport.requestId,
+                elements: pendingContinueImport.elements,
+              },
+            });
 
             return;
           }
@@ -82,6 +97,31 @@ export function useWebsocket({
           case WsMessageType.YJS_UPDATE: {
             const update = base64ToUint8Array(message.message.update);
             Y.applyUpdate(document, update, service);
+
+            return;
+          }
+
+          case WsMessageType.CONTINUE_IMPORT: {
+            if (message.message.action !== 'result') {
+              return;
+            }
+
+            const pendingContinueImport = continueImportRef.current;
+
+            if (!pendingContinueImport || message.message.requestId !== pendingContinueImport.requestId) {
+              return;
+            }
+
+            if (message.message.status === 'failed') {
+              ToastService.error('Unable to restore your previous collaboration state.');
+
+              setInitialSyncStatus('failed');
+
+              return;
+            }
+
+            hasCompletedContinueImportRef.current = true;
+            setInitialSyncStatus('completed');
 
             return;
           }
@@ -126,14 +166,18 @@ export function useWebsocket({
   }, [wsToken, document, service]);
 
   const commitHistoryEntry = useCallback((entry: CollaborationHistoryEntryDraft): void => {
+    if (initialSyncStatus !== 'completed') {
+      return;
+    }
+
     service.send({
       type: WsMessageType.HISTORY_ENTRY_COMMIT,
       message: entry,
     });
-  }, [service]);
+    }, [service, initialSyncStatus]);
 
   const undo = useCallback((): void => {
-    if (!historyState.canUndo) {
+    if (initialSyncStatus !== 'completed' || !historyState.canUndo) {
       return;
     }
 
@@ -141,14 +185,13 @@ export function useWebsocket({
       type: WsMessageType.UNDO_REQUEST,
       message: {
         requestId: generateUUID(),
-        expectedVersion:
-        historyState.historyVersion,
+        expectedVersion: historyState.historyVersion,
       },
     });
-  }, [service, historyState]);
+  }, [service, historyState, initialSyncStatus]);
 
   const redo = useCallback((): void => {
-    if (!historyState.canRedo) {
+    if (initialSyncStatus !== 'completed' || !historyState.canRedo) {
       return;
     }
 
@@ -156,15 +199,18 @@ export function useWebsocket({
       type: WsMessageType.REDO_REQUEST,
       message: {
         requestId: generateUUID(),
-        expectedVersion:
-        historyState.historyVersion,
+        expectedVersion: historyState.historyVersion,
       },
     });
-  }, [service, historyState]);
+  }, [service, historyState, initialSyncStatus]);
 
   const beginMutation = useCallback((elementIds: string[]): Promise<boolean> => {
-      return service.beginEdit(elementIds);
-    }, [service]);
+    if (initialSyncStatus !== 'completed') {
+      return Promise.resolve(false);
+    }
+
+    return service.beginEdit(elementIds);
+  }, [service, initialSyncStatus]);
 
   const commitMutation = useCallback((): void => {
       service.endEdit();

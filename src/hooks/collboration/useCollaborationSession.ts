@@ -1,12 +1,11 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
-
+import { useState } from 'react';
 import { CollaborationEntryMode, DocumentMutationLifecycle, Element } from '@/interfaces';
-import { seedYDoc } from '@/lib/yjs';
 import { useWebsocket } from '@/hooks/websocket';
 import { useCollaborationDocument } from './useCollaborationDocument';
 import { useCollaborationSnapshot } from './useCollaborationSnapshot';
+import { generateUUID } from "@/lib/utils";
 
 interface UseCollaborationSessionParams {
   roomId: string;
@@ -21,17 +20,8 @@ export function useCollaborationSession({
   entryMode,
   cachedElements,
 }: UseCollaborationSessionParams) {
-  const { document, yElements, elements, addElement, updateElement, removeElement, syncElementOrder, yElementOrder } = useCollaborationDocument();
-  const hasImportedCachedSnapshotRef = useRef<boolean>(false);
-
-  const handleInitialSyncReady = useCallback((): void => {
-    if (entryMode !== 'continue' || hasImportedCachedSnapshotRef.current) {
-      return;
-    }
-
-    hasImportedCachedSnapshotRef.current = true;
-    seedYDoc(yElements, yElementOrder, cachedElements);
-  }, [entryMode, yElements, yElementOrder, cachedElements]);
+  const { document, elements, addElement, updateElement, removeElement, syncElementOrder } = useCollaborationDocument();
+  const [continueImportRequestId] = useState<string>(generateUUID);
 
   const {
     status,
@@ -46,7 +36,14 @@ export function useCollaborationSession({
   } = useWebsocket({
     wsToken,
     document,
-    onInitialSyncReady: handleInitialSyncReady,
+    continueImport:
+      entryMode === 'continue'
+        ? {
+          requestId: continueImportRequestId,
+          elements: cachedElements,
+        }
+        : undefined,
+
   });
 
   const mutationLifecycle: DocumentMutationLifecycle = {

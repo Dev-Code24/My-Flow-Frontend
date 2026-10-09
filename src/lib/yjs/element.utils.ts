@@ -133,28 +133,6 @@ export function removeElementFromYDoc(
 	yElements.delete(elementId);
 }
 
-export function seedYDoc(
-	yElements: YElementsMap,
-	yElementOrder: YElementOrder,
-	elements: Element[],
-): void {
-	runInTransaction(yElements, () => {
-		const existingOrder = new Set(yElementOrder.toArray());
-
-		elements.forEach((element) => {
-			addElementToYDoc(yElements, element);
-
-			if ( existingOrder.has(element.id)) {
-				return;
-			}
-
-			yElementOrder.push([element.id]);
-
-			existingOrder.add(element.id);
-		});
-	});
-}
-
 export function getElementsFromYDoc(
 	yElements: YElementsMap,
 	yElementOrder: YElementOrder,
