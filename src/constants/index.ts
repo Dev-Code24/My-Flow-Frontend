@@ -1,4 +1,5 @@
-import { Interaction, Tool, WhiteboardState } from '@/interfaces';
+import { Interaction, WhiteboardState } from '@/interfaces';
+import { Tool } from '@/lib/interfaces';
 
 export enum KeyboardKeys {
    O = 'o',
