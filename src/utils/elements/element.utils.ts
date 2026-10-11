@@ -1,6 +1,7 @@
 import { ANGLE_SNAP_INCREMENT, MIN_SHAPE_SIZE } from '@/constants';
-import { Coordinates2D, Element, PendingDrawing, Shape, Tool } from '@/interfaces';
-import { generateUUID } from "@/lib/utils";
+import { PendingDrawing } from '@/interfaces';
+import { Coordinates2D, Element, Shape, Tool } from '@/lib/interfaces';
+import { generateUUID } from '@/lib/utils';
 
 export function isElementInSelection(el: Element, box: { x1: number; y1: number; x2: number; y2: number }): boolean {
 	const minX = Math.min(box.x1, box.x2);

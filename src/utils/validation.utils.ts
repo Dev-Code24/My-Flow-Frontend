@@ -1,5 +1,4 @@
-import { Shape } from '@/interfaces';
-import { SharedFlowDocument } from '@/lib/interfaces';
+import { Shape, SharedFlowDocument } from '@/lib/interfaces';
 
 export function isValidSharedFlowDocument(value: unknown): value is SharedFlowDocument {
    if (typeof value !== 'object' || value === null) {

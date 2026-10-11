@@ -1,5 +1,4 @@
-import { RoomDuration, RoomRole } from '@/lib/interfaces';
-import { Element } from '@/interfaces';
+import { RoomDuration, RoomRole, Element } from '@/lib/interfaces';
 
 export interface RoomCollaborationOptions {
   duration: RoomDuration;

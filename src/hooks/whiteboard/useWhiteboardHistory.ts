@@ -2,7 +2,8 @@
 
 import { Dispatch, useCallback, useState } from 'react';
 
-import { Element, WhiteboardAction } from '@/interfaces';
+import { WhiteboardAction } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 
 interface UseWhiteboardHistoryParams {
 	elements: Element[];

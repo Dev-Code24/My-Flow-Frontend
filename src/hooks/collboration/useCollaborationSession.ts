@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { CollaborationEntryMode, DocumentMutationLifecycle, Element } from '@/interfaces';
+import { CollaborationEntryMode, DocumentMutationLifecycle } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 import { useWebsocket } from '@/hooks/websocket';
 import { useCollaborationDocument } from './useCollaborationDocument';
-import { useCollaborationSnapshot } from './useCollaborationSnapshot';
-import { generateUUID } from "@/lib/utils";
+import { useAutosaveCollaborationSnapshot } from './useAutosaveCollaborationSnapshot';
+import { generateUUID } from '@/lib/utils';
 
 interface UseCollaborationSessionParams {
   roomId: string;
@@ -36,13 +37,11 @@ export function useCollaborationSession({
   } = useWebsocket({
     wsToken,
     document,
-    continueImport:
-      entryMode === 'continue'
+    continueImport: entryMode === 'continue'
         ? {
           requestId: continueImportRequestId,
           elements: cachedElements,
-        }
-        : undefined,
+        } : undefined,
 
   });
 
@@ -54,7 +53,7 @@ export function useCollaborationSession({
 
   const isPersistenceEnabled = initialSyncStatus === 'completed';
 
-  useCollaborationSnapshot({ roomId, elements, enabled: isPersistenceEnabled });
+  useAutosaveCollaborationSnapshot({ roomId, elements, enabled: isPersistenceEnabled });
 
   return {
     document,

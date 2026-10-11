@@ -1,4 +1,4 @@
-import { Coordinates2D, Element, ResizeHandle, Shape, CornerHandles, BoundsResizeHandle } from '@/interfaces';
+import { Coordinates2D, Element, ResizeHandle, Shape, CornerHandles, BoundsResizeHandle } from '@/lib/interfaces';
 import { MIN_SHAPE_SIZE } from '@/constants';
 import { isMouseOnArrow, updateArrowCurve, updateStraightArrowEndpoint } from '../arrows';
 import { getSelectionHandleAtPosition } from '../elements';

@@ -1,4 +1,4 @@
-import { Coordinates2D, Element } from '@/interfaces';
+import { Coordinates2D, Element } from '@/lib/interfaces';
 import {
 	getArrowLocalPoints,
 	getDistanceFromPointToLineSegment,

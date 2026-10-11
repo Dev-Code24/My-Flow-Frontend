@@ -6,11 +6,8 @@ import {
 } from 'react';
 import * as Y from 'yjs';
 
-import {
-  Element,
-  WhiteboardAction,
-  WhiteboardState,
-} from '@/interfaces';
+import { WhiteboardAction, WhiteboardState } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
 
 interface UseCollaborativeWhiteboardDispatchParams {

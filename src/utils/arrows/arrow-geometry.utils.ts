@@ -1,5 +1,5 @@
 import { ANGLE_SNAP_INCREMENT, EPSILON } from '@/constants';
-import { ArrowBounds, Coordinates2D, Element } from '@/interfaces';
+import { ArrowBounds, Coordinates2D, Element } from '@/lib/interfaces';
 
 export function getArrowLocalPoints(element: Element): {
 	start: Coordinates2D;

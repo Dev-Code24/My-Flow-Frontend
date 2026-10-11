@@ -1,4 +1,4 @@
-import { Element } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 
 export interface WhiteboardDocumentOperations {
   addElement: (element: Element) => void;

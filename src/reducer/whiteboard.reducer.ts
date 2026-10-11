@@ -1,6 +1,6 @@
-import { Element, Interaction, Shape, Tool, WhiteboardAction, WhiteboardState } from '@/interfaces';
+import { Interaction, WhiteboardAction, WhiteboardState } from '@/interfaces';
 import { isElementInSelection } from '@/utils';
-import { generateUUID } from "@/lib/utils";
+import { Element, Shape, Tool } from '@/lib/interfaces';
 
 export function whiteboardReducer(state: WhiteboardState, action: WhiteboardAction): WhiteboardState {
    switch (action.type) {

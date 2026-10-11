@@ -1,5 +1,5 @@
 import { ARROW_CURVE_EPSILON, ARROW_CURVE_MIN_ENDPOINT_DISTANCE, CURVE_HANDLE_T, EPSILON } from '@/constants';
-import { Coordinates2D, Element, Shape } from '@/interfaces';
+import { Coordinates2D, Element, Shape } from '@/lib/interfaces';
 import { getArrowLocalPoints, getQuadraticBezierPoint, getQuadraticControlFromCurvePoint } from './arrow-geometry.utils';
 
 export function getArrowCurveHandlePosition(element: Element): Coordinates2D {

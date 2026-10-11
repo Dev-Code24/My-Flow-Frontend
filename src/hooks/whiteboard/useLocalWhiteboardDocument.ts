@@ -1,7 +1,8 @@
 import { Dispatch, useCallback } from 'react';
 
-import { Element, WhiteboardAction, WhiteboardDocumentOperations } from '@/interfaces';
-import { generateUUID } from "@/lib/utils";
+import { WhiteboardAction, WhiteboardDocumentOperations } from '@/interfaces';
+import { generateUUID } from '@/lib/utils';
+import { Element } from '@/lib/interfaces';
 
 interface UseLocalWhiteboardDocumentParams {
   elements: Element[];

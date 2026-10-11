@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 
-import { WsMessage, WsMessageType } from '@/lib/interfaces';
+import { WsMessage, WsMessageType, CollaborationHistoryEntryDraft, RoomHistoryState, Element } from '@/lib/interfaces';
 import { WebSocketService } from '@/lib/websocket';
 import { base64ToUint8Array, generateUUID, uint8ArrayToBase64 } from '@/lib/utils';
 import { ToastService } from '@/ui/toast';
-import { CollaborationHistoryEntryDraft, RoomHistoryState, Element } from "@/interfaces";
 
 export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 export type InitialSyncStatus = 'waiting' | 'syncing' | 'completed' | 'failed';

@@ -1,4 +1,5 @@
-import { Element, CollaborationSnapshot } from '@/interfaces';
+import { CollaborationSnapshot } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 import { COLLABORATION_SNAPSHOT_TTL_MS, MAX_COLLABORATION_SNAPSHOTS } from '@/constants';
 import {
   deleteCollaborationParticipant, deleteCollaborationRoomEntry, deleteCollaborationSnapshot, getAllCollaborationSnapshots,

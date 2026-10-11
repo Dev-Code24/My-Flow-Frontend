@@ -1,6 +1,6 @@
-import { INDEXED_DB_CONSTANTS } from "@/lib/constants";
-import { deleteIndexedDBValue, getIndexedDBValue, openIndexedDB, setIndexedDBValue, getAllIndexedDBValues } from "@/lib/utils/indexed-db.utils";
-import { CollaborationParticipant, CollaborationRoomEntry, CollaborationSnapshot } from "@/interfaces";
+import { INDEXED_DB_CONSTANTS } from '@/lib/constants';
+import { deleteIndexedDBValue, getIndexedDBValue, openIndexedDB, setIndexedDBValue, getAllIndexedDBValues } from '@/lib/utils/indexed-db.utils';
+import { CollaborationParticipant, CollaborationRoomEntry, CollaborationSnapshot } from '@/interfaces';
 
 function openCollaborationDB(): Promise<IDBDatabase> {
   return openIndexedDB(

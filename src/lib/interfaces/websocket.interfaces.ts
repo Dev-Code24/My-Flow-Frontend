@@ -1,6 +1,5 @@
-// TODO Remove these imports from here, or put the interfaces in this file somewhere
-//  else this is shared logic
-import { CollaborationHistoryEntryDraft, RoomHistoryState, Element } from "@/interfaces";
+import { CollaborationHistoryEntryDraft, RoomHistoryState } from './history.interfaces';
+import { Element } from './element.interfaces';
 
 interface YjsUpdatePayload {
   updateId: string;

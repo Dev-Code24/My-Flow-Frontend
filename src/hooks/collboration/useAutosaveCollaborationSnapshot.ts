@@ -2,22 +2,21 @@
 
 import { useEffect, useRef } from 'react';
 
-import { Element } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 import { COLLABORATION_SNAPSHOT_AUTOSAVE_DELAY } from '@/constants';
 import { saveCollaborationSnapshotState } from '@/utils';
 
-interface UseCollaborationSnapshotParams {
+interface UseAutosaveCollaborationSnapshotParams {
   roomId: string;
   elements: Element[];
   enabled: boolean;
 }
 
-// TODO: Rename this to useAutosaveCollaborationSnapshot
-export function useCollaborationSnapshot({
+export function useAutosaveCollaborationSnapshot({
   roomId,
   elements,
   enabled,
-}: UseCollaborationSnapshotParams): void {
+}: UseAutosaveCollaborationSnapshotParams): void {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {

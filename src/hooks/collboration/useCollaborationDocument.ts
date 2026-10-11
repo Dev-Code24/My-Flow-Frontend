@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import * as Y from "yjs";
-import { Element } from "@/interfaces";
+import { useCallback, useEffect, useState } from 'react';
+import * as Y from 'yjs';
+import { Element } from '@/lib/interfaces';
 import {
 	addElementToYDoc, getElementsFromYDoc,
 	getYElementOrder, getYElements, removeElementFromYDoc, syncYElementOrder, updateYElement, YElementMap, YElementOrder,
 	YElementsMap,
-} from "@/lib/yjs";
+} from '@/lib/yjs';
 
 interface UseCollaborationDocumentResult {
 	document: Y.Doc;

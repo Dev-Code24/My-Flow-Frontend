@@ -2,9 +2,9 @@
 
 import { useCallback, useRef } from 'react';
 
-import { CollaborationHistoryEntryDraft, Element, HistoryElementChange } from '@/interfaces';
+import { CollaborationHistoryEntryDraft, Element, HistoryElementChange } from '@/lib/interfaces';
 import { areHistoryElementStatesEqual, getHistoryElementChanges } from '@/utils';
-import { generateUUID } from "@/lib/utils";
+import { generateUUID } from '@/lib/utils';
 
 interface UseCollaborationHistoryRecorderParams {
   onEntryCommitted: (entry: CollaborationHistoryEntryDraft) => void;

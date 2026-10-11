@@ -1,4 +1,4 @@
 export { useCollaborationDocument } from './useCollaborationDocument';
-export { useCollaborationSnapshot } from './useCollaborationSnapshot';
+export { useAutosaveCollaborationSnapshot } from './useAutosaveCollaborationSnapshot';
 export { useCollaborationSession } from './useCollaborationSession';
 export { useCollaborationHistoryRecorder } from './useCollaborationHistoryRecorder';

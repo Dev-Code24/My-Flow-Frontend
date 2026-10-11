@@ -1,4 +1,4 @@
-import { Element, HistoryElementChange, HistoryElementState } from '@/interfaces';
+import { Element, HistoryElementChange, HistoryElementState } from '@/lib/interfaces';
 
 export function getHistoryElementChanges(
   beforeElements: Element[],
