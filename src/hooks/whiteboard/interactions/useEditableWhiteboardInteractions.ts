@@ -1,15 +1,7 @@
 import { Dispatch, MouseEvent as ReactMouseEvent, RefObject, useRef } from 'react';
 
-import {
-	Coordinates2D,
-	DocumentHistoryLifecycle, DocumentMutationLifecycle,
-	Element,
-	Interaction,
-	MarqueeSelectionMode,
-	SelectionBox,
-	Tool,
-	WhiteboardAction,
-} from '@/interfaces';
+import { DocumentHistoryLifecycle, DocumentMutationLifecycle, Interaction, MarqueeSelectionMode, WhiteboardAction } from '@/interfaces';
+import { Coordinates2D, Element, SelectionBox, Tool } from '@/lib/interfaces';
 import { CursorType } from '@/constants';
 import {
 	findTopmostElementAtPosition,

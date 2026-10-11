@@ -1,7 +1,7 @@
 import { KeyboardKeys } from '@/constants';
 import { EditingKeyboardShortcutsProps } from './interfaces';
 import { useEffect, useRef } from 'react';
-import { Tool } from '@/interfaces';
+import { Tool } from '@/lib/interfaces';
 
 export function useEditingKeyboardShortcuts(editing : EditingKeyboardShortcutsProps | null) : void {
   const isDeletingRef = useRef<boolean>(false);

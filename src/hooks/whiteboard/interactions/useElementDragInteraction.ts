@@ -1,7 +1,8 @@
 import { Dispatch, MutableRefObject, useRef } from 'react';
 
-import { Coordinates2D, DocumentMutationLifecycle, Element, Interaction, WhiteboardAction } from '@/interfaces';
-import { generateUUID } from "@/lib/utils";
+import { DocumentMutationLifecycle, Interaction, WhiteboardAction } from '@/interfaces';
+import { Coordinates2D, Element } from '@/lib/interfaces';
+import { generateUUID } from '@/lib/utils';
 
 interface PendingElementInteraction {
 	elementId: string;

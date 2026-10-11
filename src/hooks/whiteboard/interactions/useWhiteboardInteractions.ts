@@ -1,6 +1,7 @@
 import { MouseEvent as ReactMouseEvent } from 'react';
 
-import { Interaction, Tool } from '@/interfaces';
+import { Interaction } from '@/interfaces';
+import { Tool } from '@/lib/interfaces';
 
 import { useCommonWhiteboardInteractions } from './useCommonWhiteboardInteractions';
 import { useEditableWhiteboardInteractions } from './useEditableWhiteboardInteractions';

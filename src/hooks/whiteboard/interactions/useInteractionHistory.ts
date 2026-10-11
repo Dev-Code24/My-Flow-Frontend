@@ -1,6 +1,7 @@
 import { Dispatch, RefObject, useRef } from 'react';
 
-import { Element, WhiteboardAction } from '@/interfaces';
+import { WhiteboardAction } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 
 interface InteractionSnapshot {
 	elements: Element[];

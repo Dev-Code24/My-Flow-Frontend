@@ -1,4 +1,5 @@
-import { DocumentHistoryLifecycle, DocumentMutationLifecycle, Element, WhiteboardAction } from '@/interfaces';
+import { DocumentHistoryLifecycle, DocumentMutationLifecycle,  WhiteboardAction } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 import { Dispatch, RefObject, SetStateAction } from 'react';
 
 export interface CommonKeyboardShortcutsProps {

@@ -1,15 +1,7 @@
 import { Dispatch, RefObject, useRef, useState } from 'react';
 
-import {
-	BoundsResizeHandle,
-	Coordinates2D,
-	DocumentMutationLifecycle,
-	Element,
-	Interaction,
-	ResizeHandle,
-	Shape,
-	WhiteboardAction,
-} from '@/interfaces';
+import { DocumentMutationLifecycle, Interaction, WhiteboardAction } from '@/interfaces';
+import { BoundsResizeHandle, Coordinates2D, Element, ResizeHandle, Shape } from '@/lib/interfaces';
 import {
 	constrainResizeToAspectRatio,
 	getCursorForHandle,
