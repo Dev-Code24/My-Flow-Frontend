@@ -1,4 +1,4 @@
-import { IndexedDBStore } from "@/lib/interfaces";
+import { IndexedDBStore } from '../interfaces';
 
 export function openIndexedDB(
   name: string,

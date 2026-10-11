@@ -1,7 +1,7 @@
-import * as Y from "yjs";
+import * as Y from 'yjs';
 
-import { Element, Coordinates2D } from "@/interfaces";
-import { YJS_COORDINATE_KEYS, YJS_DOCUMENT_KEYS, YJS_ELEMENT_KEYS } from "@/constants";
+import { Element, Coordinates2D } from '../interfaces';
+import { YJS_COORDINATE_KEYS, YJS_DOCUMENT_KEYS, YJS_ELEMENT_KEYS } from '@/constants';
 
 export type YElementMap = Y.Map<unknown>;
 export type YElementsMap = Y.Map<YElementMap>;
@@ -54,7 +54,7 @@ export function createYElement(element: Element): YElementMap {
 	yElement.set(YJS_ELEMENT_KEYS.FILL, element.fill);
 	yElement.set(YJS_ELEMENT_KEYS.SHAPE, element.shape);
 
-	if ("curveOffset" in element && element.curveOffset) {
+	if ('curveOffset' in element && element.curveOffset) {
 		yElement.set(YJS_ELEMENT_KEYS.CURVE_OFFSET, createYCoordinates(element.curveOffset));
 	}
 
@@ -75,7 +75,7 @@ export function getElementFromYMap(
 		height: yElement.get(YJS_ELEMENT_KEYS.HEIGHT) as number,
 		angle: yElement.get(YJS_ELEMENT_KEYS.ANGLE) as number,
 		fill: yElement.get(YJS_ELEMENT_KEYS.FILL) as boolean,
-		shape: yElement.get(YJS_ELEMENT_KEYS.SHAPE) as Element["shape"],
+		shape: yElement.get(YJS_ELEMENT_KEYS.SHAPE) as Element['shape'],
 		...(curveOffset ? { curveOffset } : {}),
 	} as Element;
 }
@@ -120,7 +120,7 @@ export function updateYElement(
 			setIfChanged(yElement, YJS_ELEMENT_KEYS.SHAPE, updates.shape);
 		}
 
-		if ("curveOffset" in updates) {
+		if ('curveOffset' in updates) {
 			updateCurveOffset(yElement, updates.curveOffset as Coordinates2D | undefined);
 		}
 	});

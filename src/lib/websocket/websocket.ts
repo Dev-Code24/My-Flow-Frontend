@@ -1,7 +1,7 @@
-import { ActiveEdit, WsMessage, WsMessageType } from "@/lib/interfaces";
-import { ENV_CONFIG } from "@/lib/config";
-import { EDIT_KEEP_ALIVE_INTERVAL_MS } from "@/lib/constants";
-import { generateUUID } from "@/lib/utils";
+import { ActiveEdit, WsMessage, WsMessageType } from '@/lib/interfaces';
+import { ENV_CONFIG } from '@/lib/config';
+import { EDIT_KEEP_ALIVE_INTERVAL_MS } from '@/lib/constants';
+import { generateUUID } from '@/lib/utils';
 
 type MessageListener = (message: WsMessage) => void;
 

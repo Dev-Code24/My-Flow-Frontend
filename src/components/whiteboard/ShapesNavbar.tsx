@@ -1,6 +1,7 @@
 'use client'
 
-import { Tool, WhiteboardAction } from '@/interfaces';
+import { WhiteboardAction } from '@/interfaces';
+import { Tool } from '@/lib/interfaces';
 import { MousePointer2, Square, Diamond, Circle, LockKeyholeOpen, Hand, Shapes, ArrowUpRight } from 'lucide-react';
 import React, { Dispatch, SetStateAction, useState } from 'react';
 

@@ -2,13 +2,8 @@
 
 import { useEffect, useReducer, useRef, useState } from 'react';
 
-import {
-  Element,
-  WhiteboardAction,
-  WhiteboardMode,
-  WhiteboardState,
-  CollaborationEntryMode,
-} from '@/interfaces';
+import { WhiteboardAction, WhiteboardMode, WhiteboardState, CollaborationEntryMode } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 import { initialWhiteBoardState } from '@/constants';
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';
 import { useCanvasPreventDefaultEvents, useCollaborativeWhiteboardDispatch, useKeyboardShortcuts, useWhiteboardCursor,
