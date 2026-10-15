@@ -147,10 +147,6 @@ export default function CollaborationWhiteboard({
   useWhiteboardCursor({ canvasRef, tool, mode, isSpacePressed });
   useCanvasPreventDefaultEvents({ canvasRef });
 
-  useEffect(() => {
-    console.log('Room history state:', historyState);
-  }, [historyState]);
-
   return (
     <Whiteboard
       canvasRef={canvasRef}

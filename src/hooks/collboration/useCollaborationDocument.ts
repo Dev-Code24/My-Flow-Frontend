@@ -43,14 +43,6 @@ export function useCollaborationDocument(): UseCollaborationDocumentResult {
 
 	useEffect(() => {
 		function handleDocumentChange(): void {
-			console.log('ELEMENT ORDER:', yElementOrder.toArray());
-			console.log(
-				'RENDERED ELEMENTS:',
-				getElementsFromYDoc(
-					yElements,
-					yElementOrder,
-				).map((element) => element.id),
-			);
 			setElements(getElementsFromYDoc(yElements, yElementOrder));
 		}
 

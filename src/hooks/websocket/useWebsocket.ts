@@ -126,7 +126,6 @@ export function useWebsocket({
           }
 
           case WsMessageType.ROOM_HISTORY_STATE: {
-            console.log('ROOM_HISTORY_STATE received:', message.message);
             setHistoryState(message.message);
 
             return;
