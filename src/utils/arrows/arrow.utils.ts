@@ -1,5 +1,5 @@
 import { CURVE_HANDLE_T } from '@/constants';
-import { Coordinates2D, Element, Shape } from '@/interfaces';
+import { Coordinates2D, Element, Shape } from '@/lib/interfaces';
 import { getArrowCurveHandlePosition, isCurvedArrow, normalizeArrowCurve, updateArrowCurve } from './arrow-curve.utils';
 import { getArrowLocalPoints, getQuadraticControlFromCurvePoint, localPointToWorld, snapPointAroundPivot, worldPointToLocal } from './arrow-geometry.utils';
 export { getArrowCurveHandlePosition, isCurvedArrow, normalizeArrowCurve, updateArrowCurve } from './arrow-curve.utils';

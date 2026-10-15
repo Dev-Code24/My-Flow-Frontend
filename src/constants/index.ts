@@ -1,4 +1,5 @@
-import { Interaction, Tool, WhiteboardState } from '@/interfaces';
+import { Interaction, WhiteboardState } from '@/interfaces';
+import { Tool } from '@/lib/interfaces';
 
 export enum KeyboardKeys {
    O = 'o',
@@ -16,7 +17,7 @@ export enum KeyboardKeys {
 };
 
 export enum CursorType {
-   POINTER = 'pointer',
+  POINTER = 'pointer',
 	TEXT = 'text',
 	NOT_ALLOWED = 'not-allowed',
 	DEFAULT = 'default',
@@ -41,3 +42,6 @@ export const initialWhiteBoardState: WhiteboardState = {
 
 export * from './zoom.constants';
 export * from './arrows.constants';
+export * from './yjs.constants';
+export * from './room.constants';
+export * from './collaboration.constants';

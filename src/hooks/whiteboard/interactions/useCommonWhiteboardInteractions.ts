@@ -1,6 +1,7 @@
 import { MouseEvent as ReactMouseEvent, useRef } from 'react';
 
-import { Coordinates2D, Interaction, Tool } from '@/interfaces';
+import { Interaction } from '@/interfaces';
+import { Coordinates2D, Tool } from '@/lib/interfaces';
 import { CursorType } from '@/constants';
 import { getCanvasPoint, getCursorStyle, getIdleWhiteboardCursor } from '@/utils';
 import { UseCommonWhiteboardInteractionsParams, UseCommonWhiteboardInteractionsResult } from './interfaces';

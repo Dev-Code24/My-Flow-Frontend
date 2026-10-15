@@ -1,4 +1,5 @@
-import { Coordinates2D, Element, HandleHitCandidate, ResizeHandle, SelectionBounds, SelectionGeometry, SelectionHandleGeometry, Shape } from '@/interfaces';
+import { HandleHitCandidate, SelectionBounds, SelectionGeometry, SelectionHandleGeometry } from '@/interfaces';
+import { Coordinates2D, Element, ResizeHandle, Shape } from '@/lib/interfaces';
 import { getArrowSelectionBounds, getArrowLocalPoints, getArrowCurveHandlePosition, isCurvedArrow } from '../arrows';
 
 const ROTATION_HANDLE_OFFSET = 25;

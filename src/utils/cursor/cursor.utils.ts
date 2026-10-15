@@ -1,4 +1,5 @@
-import { CursorContext, Interaction, ResizeHandle, Tool, WhiteboardMode } from '@/interfaces';
+import { CursorContext, Interaction, WhiteboardMode } from '@/interfaces';
+import { ResizeHandle, Tool } from '@/lib/interfaces';
 import { CursorType } from '@/constants';
 
 export function getCursorForHandle(angle: number, handle: ResizeHandle): string {

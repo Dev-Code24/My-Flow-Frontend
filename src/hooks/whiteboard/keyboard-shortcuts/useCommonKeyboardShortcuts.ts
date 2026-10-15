@@ -7,7 +7,7 @@ import { CommonKeyboardShortcutsProps } from './interfaces';
 export function useCommonKeyboardShortcuts({ canvasRef, setIsSpacePressed, cancelInteraction }: CommonKeyboardShortcutsProps): void {
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent): void => {
-			if (event.repeat) {
+			if (event.repeat || !event.key) {
 				return;
 			}
 
@@ -35,6 +35,7 @@ export function useCommonKeyboardShortcuts({ canvasRef, setIsSpacePressed, cance
 		};
 
 		const handleKeyUp = (event: KeyboardEvent): void => {
+			if (!event.key) { return; }
 			const key = event.key.toLowerCase();
 
 			if (key === KeyboardKeys.SPACEBAR) {

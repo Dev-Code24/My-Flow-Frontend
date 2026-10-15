@@ -1,6 +1,7 @@
 import { Dispatch, MutableRefObject, useRef } from 'react';
 
-import { Coordinates2D, Element, PendingDrawing, Shape, WhiteboardAction } from '@/interfaces';
+import { PendingDrawing, WhiteboardAction } from '@/interfaces';
+import { Coordinates2D, Element, Shape } from '@/lib/interfaces';
 import { createDrawingElement, hasCrossedDrawingThreshold, updateDrawingElement } from '@/utils';
 
 interface UseDrawingInteractionParams {

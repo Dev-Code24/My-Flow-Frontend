@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:open": "npm run dev -- --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -16,6 +17,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.72.0",
+    "yjs": "^13.6.32",
     "zod": "^4.3.6"
   },
   "devDependencies": {

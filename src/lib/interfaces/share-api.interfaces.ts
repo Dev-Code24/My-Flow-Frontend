@@ -1,4 +1,4 @@
-import { Element } from '@/interfaces';
+import { Element } from './element.interfaces';
 
 export interface FlowDocumentData {
 	elements: Element[];

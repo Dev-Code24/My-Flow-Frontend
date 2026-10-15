@@ -1,9 +1,10 @@
 'use client';
 
-import {Dispatch, SetStateAction, useEffect, useRef } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef } from 'react';
 
-import { Coordinates2D, Element, WhiteboardAction } from '@/interfaces';
+import { WhiteboardAction } from '@/interfaces';
 import { loadWorkspace, saveWorkspace } from '@/lib/utils';
+import { Coordinates2D, Element } from '@/lib/interfaces';
 
 interface UseLocalWorkspaceParams {
 	elements: Element[];
