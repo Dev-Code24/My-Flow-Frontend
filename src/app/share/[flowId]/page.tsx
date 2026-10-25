@@ -6,7 +6,8 @@ import Whiteboard from '@/components/whiteboard';
 import { ReadonlyTopRightAction } from '@/components';
 
 import { useSharedFlow } from '@/hooks/api';
-import { Element, Interaction, WhiteboardAction, WhiteboardMode, WhiteboardState } from '@/interfaces';
+import { Interaction, WhiteboardAction, WhiteboardMode, WhiteboardState } from '@/interfaces';
+import { Element } from '@/lib/interfaces';
 import { initialWhiteBoardState } from '@/constants';
 import { useWhiteboardViewport, useWhiteboardInteractions, useKeyboardShortcuts, useCanvasPreventDefaultEvents, useWhiteboardCursor } from '@/hooks/whiteboard';
 import { whiteboardReducer } from '@/reducer/whiteboard.reducer';

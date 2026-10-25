@@ -1,4 +1,4 @@
-import { toast } from '@/ui/toast/toast.service';
+import { ToastService } from '@/ui/toast/toast.service';
 import { ApiError } from '../errors';
 import { ApiResponse } from '../interfaces';
 
@@ -120,7 +120,7 @@ export function showInfrastructureError(error: ApiError): void {
     case 'timeout':
     case 'invalid-response':
     case 'unknown':
-      toast.error(error.message);
+      ToastService.error(error.message);
       break;
 
     case 'http':

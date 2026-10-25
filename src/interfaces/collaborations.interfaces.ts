@@ -1,0 +1,33 @@
+import { RoomDuration, RoomRole, Element } from '@/lib/interfaces';
+
+export interface RoomCollaborationOptions {
+  duration: RoomDuration;
+  displayName?: string;
+}
+
+export interface CollaborationRoomEntry {
+  roomId: string;
+  displayName?: string;
+}
+
+export interface CollaborationParticipant {
+  roomId: string;
+  participantId: string;
+  displayName: string;
+  role: RoomRole;
+}
+
+export type CollaborationEntryMode = 'continue' | 'clean';
+
+export interface CollaborationSnapshot {
+  roomId: string;
+  elements: Element[];
+  updatedAt: number;
+  lastAccessedAt: number;
+}
+
+export interface DocumentMutationLifecycle {
+  beginMutation: (elementIds: string[]) => Promise<boolean>;
+  commitMutation: VoidFunction;
+  cancelMutation: VoidFunction;
+}

@@ -1,7 +1,8 @@
 import { RefObject, useEffect } from 'react';
 
-import { Tool, WhiteboardMode } from '@/interfaces';
+import { WhiteboardMode } from '@/interfaces';
 import { getIdleWhiteboardCursor } from '@/utils';
+import { Tool } from '@/lib/interfaces';
 
 interface UseWhiteboardCursorParams {
 	canvasRef: RefObject<HTMLCanvasElement | null>;

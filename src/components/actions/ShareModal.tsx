@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Link2, LoaderCircle, Play, Share2 } from 'lucide-react';
 
 import Modal from '@/ui/modal';
+import StartCollaborationModal from "@/components/StartCollaborationModal";
+import { RoomCollaborationOptions } from "@/interfaces";
 import Button from '@/ui/button';
 
 interface ShareModalProps {
-  onStartSession: () => Promise<void>;
+  onStartSession: (options: RoomCollaborationOptions) => Promise<void>;
   onExportToLink: () => Promise<void>;
   isStartingSession: boolean;
   isExporting: boolean;
@@ -20,6 +22,7 @@ export default function ShareModal({
   isExporting,
 }: ShareModalProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isStartCollaborationModalOpen, setIsStartCollaborationModalOpen] = useState<boolean>(false);
 
   const isLoading = isStartingSession || isExporting;
 
@@ -36,7 +39,26 @@ export default function ShareModal({
       return;
     }
 
-    await onStartSession();
+    setIsOpen(false);
+    setIsStartCollaborationModalOpen(true);
+  }
+
+  async function handleCollaborationStart(options: RoomCollaborationOptions): Promise<void> {
+    if (isLoading) {
+      return;
+    }
+
+    await onStartSession(options);
+    setIsStartCollaborationModalOpen(false);
+  }
+
+  function handleStartCollaborationModalClose(): void {
+    if (isStartingSession) {
+      return;
+    }
+
+    setIsStartCollaborationModalOpen(false);
+    setIsOpen(true);
   }
 
   async function handleExportToLink(): Promise<void> {
@@ -102,9 +124,11 @@ export default function ShareModal({
 
         <div className='my-9 flex items-center gap-4'>
           <div className='h-px flex-1 bg-border' />
+
           <span className='text-sm text-text-primary'>
             Or
           </span>
+
           <div className='h-px flex-1 bg-border' />
         </div>
 
@@ -138,6 +162,13 @@ export default function ShareModal({
           </Button>
         </section>
       </Modal>
+
+      <StartCollaborationModal
+        isOpen={isStartCollaborationModalOpen}
+        isSubmitting={isStartingSession}
+        onCancel={handleStartCollaborationModalClose}
+        onSubmit={handleCollaborationStart}
+      />
     </>
   );
 }

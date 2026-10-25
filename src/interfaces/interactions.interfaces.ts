@@ -1,4 +1,4 @@
-import { Coordinates2D, Element, ResizeHandle, Shape, Tool } from './whiteboard.interfaces';
+import { Coordinates2D, Element, ResizeHandle, Shape, Tool } from '@/lib/interfaces';
 
 export enum Interaction {
 	IDLE = 'idle',

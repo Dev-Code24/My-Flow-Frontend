@@ -5,14 +5,24 @@ import { createContext, ReactNode, useEffect, useState } from 'react';
 import { login as loginRequest, signup as signupRequest, logout as logoutRequest, getCurrentUser } from '@/lib/api/auth';
 import { LoginRequestData,  RegisterRequestData, AuthUser } from '@/lib/interfaces';
 
-interface AuthContextValue {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  isInitializing: boolean;
+interface AuthContextActions {
   login: (data: LoginRequestData) => Promise<void>;
   signup: (data: RegisterRequestData) => Promise<void>;
   logout: () => Promise<void>;
 }
+
+type AuthContextValue = AuthContextActions & (
+  | {
+  isAuthenticated: true;
+  user: AuthUser;
+  isInitializing: boolean;
+}
+  | {
+  isAuthenticated: false;
+  user: null;
+  isInitializing: boolean;
+}
+  );
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
   undefined,
@@ -62,17 +72,26 @@ export function AuthProvider({
     setUser(null);
   }
 
+  const authState: AuthContextValue = user
+    ? {
+      user,
+      isAuthenticated: true,
+      isInitializing,
+      login,
+      signup,
+      logout,
+    }
+    : {
+      user: null,
+      isAuthenticated: false,
+      isInitializing,
+      login,
+      signup,
+      logout,
+    };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: user !== null,
-        isInitializing,
-        login,
-        signup,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={authState} >
       {children}
     </AuthContext.Provider>
   );

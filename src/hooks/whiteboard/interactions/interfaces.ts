@@ -1,6 +1,7 @@
 import { Dispatch, RefObject, SetStateAction, MouseEvent as ReactMouseEvent } from 'react';
 
-import { Coordinates2D, Element, Interaction, SelectionBox, Tool, WhiteboardAction } from '@/interfaces';
+import { DocumentHistoryLifecycle, DocumentMutationLifecycle, Interaction, WhiteboardAction } from '@/interfaces';
+import { Coordinates2D, Element, SelectionBox, Tool } from '@/lib/interfaces';
 
 export interface UseCommonWhiteboardInteractionsParams {
    canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -23,6 +24,8 @@ interface EditableWhiteboardInteractionProps {
       documentRevision: number;
       recordSnapshot: (snapshot: Element[]) => void;
       isAltPressed: boolean;
+      historyLifecycle?: DocumentHistoryLifecycle;
+      mutationLifecycle?: DocumentMutationLifecycle;
    };
 }
 

@@ -1,9 +1,8 @@
 'use client';
 
 import { RefObject, useEffect, useLayoutEffect, useState } from 'react';
-
-import { Coordinates2D, Element, Interaction, WhiteboardState } from '@/interfaces';
-
+import { Interaction, WhiteboardState } from '@/interfaces';
+import { Coordinates2D, Element } from '@/lib/interfaces';
 import { drawCanvas } from '@/utils';
 
 interface CanvasSize {

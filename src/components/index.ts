@@ -1,10 +1,14 @@
 import HistoryControls from './HistoryControls';
-import ShapesNavbar from './ShapesNavbar';
+import JoinCollaborationModal from './JoinCollaborationModal';
+import StartCollaborationModal from './StartCollaborationModal';
 
 export {
-   ShapesNavbar,
    HistoryControls,
+   JoinCollaborationModal,
+   StartCollaborationModal,
 };
 
+export * from './whiteboard';
 export * from './auth';
 export * from './actions';
+export * from './collaboration';

@@ -1,12 +1,5 @@
 import { Interaction } from './interactions.interfaces';
-import { Element, Tool } from './whiteboard.interfaces';
-
-export interface SelectionBox {
-   x1: number;
-   y1: number;
-   x2: number;
-   y2: number;
-}
+import { Element, SelectionBox, Tool } from '@/lib/interfaces';
 
 export interface WhiteboardState {
    elements: Element[];
@@ -63,11 +56,11 @@ export type WhiteboardAction =
       dx: number;
       dy: number;
    }
-   | {
+  | {
       type: 'DUPLICATE_SELECTED';
       elementIds: string[];
-   }
-   | {
+      duplicateIds: Record<string, string>;
+   } | {
       type: 'RESTORE_INTERACTION_STATE';
       elements: Element[];
       selectedIds: string[];
@@ -85,6 +78,14 @@ export type WhiteboardAction =
    }
    | {
       type: 'DELETE_SELECTED';
+      elementIds?: string[];
+   } | {
+      type: 'SYNC_DOCUMENT_ELEMENTS';
+      elements: Element[];
+   }
+   | {
+      type: 'APPLY_WHITEBOARD_STATE';
+      state: WhiteboardState;
    };
 
 export type WhiteboardMode = 'editable' | 'readonly';

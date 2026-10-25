@@ -1,6 +1,8 @@
 import { ENV_CONFIG } from '@/lib/config';
 import { ApiResponse, RequestOptions } from '@/lib/interfaces';
-import { createHttpError, createRequestHeaders, normalizeApiError, parseApiResponse, serializeBody, showInfrastructureError } from '@/lib/utils';
+import {
+  createHttpError, createRequestHeaders, normalizeApiError, parseApiResponse, serializeBody, showInfrastructureError
+} from '@/lib/utils';
 
 const API_BASE_URL = ENV_CONFIG.API_BASE_URL;
 const DEFAULT_TIMEOUT = 10_000;

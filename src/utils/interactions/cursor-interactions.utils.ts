@@ -1,4 +1,5 @@
-import { Coordinates2D, Element, Interaction, ResizeHandle, Tool } from '@/interfaces';
+import { Interaction } from '@/interfaces';
+import { Coordinates2D, Element, ResizeHandle, Tool } from '@/lib/interfaces';
 import { getHandleAtPosition, getWhiteboardCursor, isMouseOnElement } from '@/utils';
 
 interface EditableCursorParams {

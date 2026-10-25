@@ -1,5 +1,5 @@
 import { ARROW_SELECTION_PADDING, EPSILON } from '@/constants';
-import { ArrowBounds, BoundsResizeHandle, Coordinates2D, Element, Shape } from '@/interfaces';
+import { ArrowBounds, BoundsResizeHandle, Coordinates2D, Element, Shape } from '@/lib/interfaces';
 import { isCurvedArrow, normalizeArrowCurve } from './arrow-curve.utils';
 import { getArrowLocalPoints, getQuadraticCurveBounds, rotatePoint, worldPointToLocal } from './arrow-geometry.utils';
 

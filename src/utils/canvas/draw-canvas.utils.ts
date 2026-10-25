@@ -1,4 +1,5 @@
-import { Coordinates2D, Element, Interaction, Shape, SelectionGeometry, SelectionHandleGeometry } from '@/interfaces';
+import { Interaction, SelectionGeometry, SelectionHandleGeometry } from '@/interfaces';
+import { Coordinates2D, Element, Shape } from '@/lib/interfaces';
 import { getContentBounds, getElementCenter, getSelectionGeometry } from '../elements';
 
 const HANDLE_SIZE = 8;

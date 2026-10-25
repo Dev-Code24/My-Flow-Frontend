@@ -2,7 +2,8 @@
 
 import { MouseEvent as ReactMouseEvent, ReactNode, RefObject, WheelEvent as ReactWheelEvent } from 'react';
 
-import { Coordinates2D, Element, Interaction, WhiteboardState } from '@/interfaces';
+import { Interaction, WhiteboardState } from '@/interfaces';
+import { Coordinates2D, Element } from '@/lib/interfaces';
 
 import BackToContent from '@/components/whiteboard/BackToContent';
 import ZoomControls from '@/components/whiteboard/ZoomControls';

@@ -1,6 +1,8 @@
 import { Dispatch, MutableRefObject, useRef } from 'react';
 
-import { Coordinates2D, Element, Interaction, WhiteboardAction } from '@/interfaces';
+import { DocumentMutationLifecycle, Interaction, WhiteboardAction } from '@/interfaces';
+import { Coordinates2D, Element } from '@/lib/interfaces';
+import { generateUUID } from '@/lib/utils';
 
 interface PendingElementInteraction {
 	elementId: string;
@@ -15,13 +17,14 @@ interface UseElementDragInteractionParams {
 	zoom: number;
 	dispatchWhiteBoardState: Dispatch<WhiteboardAction>;
 	beginDocumentChange: VoidFunction;
+	mutationLifecycle: DocumentMutationLifecycle;
 }
 
 interface UseElementDragInteractionResult {
 	pendingElementInteraction: MutableRefObject<PendingElementInteraction | null>;
 	hasStartedMoving: MutableRefObject<boolean>;
 	prepareElementInteraction: (element: Element, rawPoint: Coordinates2D, modifierPressed: boolean) => void;
-	tryStartMoving: (rawPoint: Coordinates2D, isAltPressed: boolean, eventAltPressed: boolean) => boolean;
+	tryStartMoving: (rawPoint: Coordinates2D, isAltPressed: boolean, eventAltPressed: boolean) => Promise<boolean>;
 	moveSelected: (rawPoint: Coordinates2D) => boolean;
 	applyPendingClickSelection: VoidFunction;
 	resetElementInteraction: VoidFunction;
@@ -34,12 +37,19 @@ export function useElementDragInteraction({
 	zoom,
 	dispatchWhiteBoardState,
 	beginDocumentChange,
+	mutationLifecycle,
 }: UseElementDragInteractionParams): UseElementDragInteractionResult {
 	const pendingElementInteraction = useRef<PendingElementInteraction | null>(null);
 	const hasStartedMoving = useRef(false);
 	const lastMovePosition = useRef<Coordinates2D>({ x: 0, y: 0 });
+	const isStartingMoving = useRef(false);
+	const isMutationDenied = useRef(false);
 
-	function prepareElementInteraction(element: Element, rawPoint: Coordinates2D, modifierPressed: boolean): void {
+	function prepareElementInteraction(
+		element: Element,
+		rawPoint: Coordinates2D,
+		modifierPressed: boolean,
+	): void {
 		pendingElementInteraction.current = {
 			elementId: element.id,
 			startRawX: rawPoint.x,
@@ -49,22 +59,73 @@ export function useElementDragInteraction({
 		};
 
 		hasStartedMoving.current = false;
+		isStartingMoving.current = false;
+		isMutationDenied.current = false;
 	}
 
-	function tryStartMoving(rawPoint: Coordinates2D, isAltPressed: boolean, eventAltPressed: boolean): boolean {
+	async function tryStartMoving(
+		rawPoint: Coordinates2D,
+		isAltPressed: boolean,
+		eventAltPressed: boolean,
+	): Promise<boolean> {
 		const pending = pendingElementInteraction.current;
-		if (!pending || hasStartedMoving.current) return false;
 
-		const distance = Math.hypot(rawPoint.x - pending.startRawX, rawPoint.y - pending.startRawY);
+		if (!pending || hasStartedMoving.current) {
+			return false;
+		}
 
-		if (distance < MOVING_DRAG_THRESHOLD) return true;
+		const distance = Math.hypot(
+			rawPoint.x - pending.startRawX,
+			rawPoint.y - pending.startRawY,
+		);
+
+		if (distance < MOVING_DRAG_THRESHOLD) {
+			return true;
+		}
+
+		if (isStartingMoving.current || isMutationDenied.current) {
+			return true;
+		}
+
+		const isDuplicateInteraction = isAltPressed || eventAltPressed;
+		const sourceElementIds = getElementIdsForDrag(pending);
+		const duplicateIds: Record<string, string> = {};
+
+		if (isDuplicateInteraction) {
+			for (const elementId of sourceElementIds) {
+				duplicateIds[elementId] = generateUUID();
+			}
+		}
+
+		const mutationElementIds = isDuplicateInteraction ? Object.values(duplicateIds) : sourceElementIds;
+
+		isStartingMoving.current = true;
+
+		let accepted: boolean = false;
+		try {
+		accepted = await mutationLifecycle.beginMutation(mutationElementIds);
+		} finally {
+			isStartingMoving.current = false;
+		}
+
+		if (!accepted) {
+			isMutationDenied.current = true;
+			return true;
+		}
+
+		if (pendingElementInteraction.current !== pending) {
+			mutationLifecycle.cancelMutation();
+			return true;
+		}
+
 
 		beginDocumentChange();
 
-		if (isAltPressed || eventAltPressed) {
+		if (isDuplicateInteraction) {
 			dispatchWhiteBoardState({
 				type: 'DUPLICATE_SELECTED',
-				elementIds: getElementIdsForDrag(pending),
+				elementIds: sourceElementIds,
+				duplicateIds,
 			});
 		} else if (!pending.wasSelected) {
 			dispatchWhiteBoardState({
@@ -120,6 +181,8 @@ export function useElementDragInteraction({
 	function resetElementInteraction(): void {
 		pendingElementInteraction.current = null;
 		hasStartedMoving.current = false;
+		isStartingMoving.current = false;
+		isMutationDenied.current = false;
 	}
 
 	function getElementIdsForDrag(pending: PendingElementInteraction): string[] {

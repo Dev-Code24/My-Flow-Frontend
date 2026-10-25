@@ -1,6 +1,7 @@
 'use client'
 
-import { Tool, WhiteboardAction } from '@/interfaces';
+import { WhiteboardAction } from '@/interfaces';
+import { Tool } from '@/lib/interfaces';
 import { MousePointer2, Square, Diamond, Circle, LockKeyholeOpen, Hand, Shapes, ArrowUpRight } from 'lucide-react';
 import React, { Dispatch, SetStateAction, useState } from 'react';
 
@@ -30,13 +31,11 @@ export default function ShapesNavbar({ tool, dispatchWhiteBoardState, setIsSpace
     <div className='absolute top-5.5 left-1/2 -translate-x-1/2 z-10'>
       <div className='flex items-center gap-0.5 px-3 py-2 rounded-[22px] bg-white border border-[#EBEAF0] shadow-[0_12px_32px_-10px_rgba(20,20,40,0.18),0_2px_6px_rgba(20,20,40,0.05)]'>
 
-        {/* Canvas lock */}
         <ToolButton active={locked} onClick={() => setLocked(v => !v)}
           label={locked ? 'Unlock canvas' : 'Lock canvas'} Icon={LockKeyholeOpen} />
 
         <Divider />
 
-        {/* FIXED: Treat Pan as a standard selectable tool */}
         <ToolButton
           active={tool === Tool.PAN}
           onClick={() => pick(Tool.PAN)}
@@ -44,7 +43,6 @@ export default function ShapesNavbar({ tool, dispatchWhiteBoardState, setIsSpace
           Icon={Hand} 
         />
 
-        {/* Supported drawing tools */}
         {TOOLS.map(t => (
           <ToolButton
             key={t.id}
